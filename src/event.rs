@@ -28,3 +28,10 @@ impl Drop for Event {
     }
 }
 
+impl Event {
+    #[inline]
+    pub fn wait(&self) -> Result<(), Error> {
+        (self.functions.wait)(self)
+    }
+}
+

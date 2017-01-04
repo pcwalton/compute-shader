@@ -38,3 +38,10 @@ impl Drop for Texture {
     }
 }
 
+impl Texture {
+    #[inline]
+    pub fn bind_to(&self, external_texture: &ExternalTexture) -> Result<(), Error> {
+        (self.functions.bind_to)(self, external_texture)
+    }
+}
+

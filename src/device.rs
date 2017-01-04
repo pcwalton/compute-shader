@@ -40,3 +40,27 @@ impl Drop for Device {
     }
 }
 
+impl Device {
+    #[inline]
+    pub fn create_queue(&self) -> Result<Queue, Error> {
+        (self.functions.create_queue)(self)
+    }
+
+    #[inline]
+    pub fn create_program(&self, source: &str) -> Result<Program, Error> {
+        (self.functions.create_program)(self, source)
+    }
+
+    #[inline]
+    pub fn create_buffer<'a>(&self, protection: Protection, data: BufferData<'a>)
+                             -> Result<Buffer<'a>, Error> {
+        (self.functions.create_buffer)(self, protection, data)
+    }
+
+    #[inline]
+    pub fn create_texture(&self, protection: Protection, size: &Size2D<u32>)
+                          -> Result<Texture, Error> {
+        (self.functions.create_texture)(self, protection, size)
+    }
+}
+

@@ -36,3 +36,15 @@ impl Drop for Instance {
     }
 }
 
+impl Instance {
+    #[inline]
+    pub fn shading_language(&self) -> ShadingLanguage {
+        (self.functions.shading_language)(self)
+    }
+
+    #[inline]
+    pub fn create_device(&self) -> Result<Device, Error> {
+        (self.functions.create_device)(self)
+    }
+}
+

@@ -55,3 +55,36 @@ impl Drop for Queue {
     }
 }
 
+impl Queue {
+    #[inline]
+    pub fn finish(&self) -> Result<(), Error> {
+        (self.functions.finish)(self)
+    }
+
+    #[inline]
+    pub fn submit_compute(&self,
+                          program: &Program,
+                          num_groups: &[u32],
+                          uniforms: &[(u32, Uniform)],
+                          events: &[Event])
+                          -> Result<Event, Error> {
+        (self.functions.submit_compute)(self, program, num_groups, uniforms, events)
+    }
+
+    #[inline]
+    pub fn submit_clear(&self, texture: &Texture, color: &Color, events: &[Event])
+                        -> Result<Event, Error> {
+        (self.functions.submit_clear)(self, texture, color, events)
+    }
+
+    #[inline]
+    pub fn submit_read_buffer(&self,
+                              dest: &mut [u8],
+                              buffer: &Buffer,
+                              start: usize,
+                              events: &[Event])
+                              -> Result<Event, Error> {
+        (self.functions.submit_read_buffer)(self, dest, buffer, start, events)
+    }
+}
+
