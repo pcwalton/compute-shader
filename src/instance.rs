@@ -18,7 +18,14 @@ pub struct Instance {
 
 pub struct InstanceFunctions {
     pub destroy: unsafe extern "Rust" fn(this: &Instance),
+    pub shading_language: extern "Rust" fn(this: &Instance) -> ShadingLanguage,
     pub create_device: extern "Rust" fn(this: &Instance) -> Result<Device, Error>,
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum ShadingLanguage {
+    Cl,
+    Glsl,
 }
 
 impl Drop for Instance {

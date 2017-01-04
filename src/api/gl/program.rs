@@ -8,26 +8,19 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate euclid;
-extern crate gl;
+use gl::types::GLuint;
+use gl;
+use program::{Program, ProgramFunctions};
 
-#[cfg(target_os = "macos")]
-extern crate core_foundation;
-#[cfg(target_os = "macos")]
-extern crate io_surface;
+pub static PROGRAM_FUNCTIONS: ProgramFunctions = ProgramFunctions {
+    destroy: destroy,
+};
 
-pub mod api {
-    #[cfg(target_os = "macos")]
-    pub mod cl;
-    pub mod gl;
+unsafe fn destroy(this: &Program) {
+    let mut shader = 0;
+    gl::GetAttachedShaders(this.data as GLuint, 1, &mut 0, &mut shader);
+    gl::UseProgram(0);
+    gl::DeleteProgram(this.data as GLuint);
+    gl::DeleteShader(shader);
 }
-
-pub mod buffer;
-pub mod device;
-pub mod error;
-pub mod event;
-pub mod instance;
-pub mod program;
-pub mod queue;
-pub mod texture;
 

@@ -8,23 +8,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate euclid;
-extern crate gl;
-
-#[cfg(target_os = "macos")]
-extern crate core_foundation;
-#[cfg(target_os = "macos")]
-extern crate io_surface;
-
-pub mod api {
-    #[cfg(target_os = "macos")]
-    pub mod cl;
-    pub mod gl;
-}
-
 pub mod buffer;
 pub mod device;
-pub mod error;
 pub mod event;
 pub mod instance;
 pub mod program;

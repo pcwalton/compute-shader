@@ -46,7 +46,7 @@ fn finish(this: &Queue) -> Result<(), Error> {
 fn submit_compute(this: &Queue,
                   program: &Program,
                   num_groups: &[u32],
-                  uniforms: &[Uniform],
+                  uniforms: &[(u32, Uniform)],
                   events: &[Event])
                   -> Result<Event, Error> {
     unsafe {
@@ -58,7 +58,7 @@ fn submit_compute(this: &Queue,
             return Err(Error)
         }
 
-        for (uniform_index, uniform) in uniforms.iter().enumerate() {
+        for &(uniform_index, ref uniform) in uniforms {
             let (arg_size, arg_value);
             match *uniform {
                 Uniform::Buffer(buffer) => {
@@ -75,10 +75,7 @@ fn submit_compute(this: &Queue,
                 }
             }
 
-            if ffi::clSetKernelArg(kernel,
-                                   uniform_index as u32,
-                                   arg_size,
-                                   arg_value) != CL_SUCCESS {
+            if ffi::clSetKernelArg(kernel, uniform_index, arg_size, arg_value) != CL_SUCCESS {
                 return Err(Error)
             }
         }

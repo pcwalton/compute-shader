@@ -8,26 +8,16 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate euclid;
-extern crate gl;
+use buffer::{Buffer, BufferFunctions};
+use gl::types::GLuint;
+use gl;
 
-#[cfg(target_os = "macos")]
-extern crate core_foundation;
-#[cfg(target_os = "macos")]
-extern crate io_surface;
+pub static BUFFER_FUNCTIONS: BufferFunctions = BufferFunctions {
+    destroy: destroy,
+};
 
-pub mod api {
-    #[cfg(target_os = "macos")]
-    pub mod cl;
-    pub mod gl;
+unsafe fn destroy(this: &Buffer) {
+    let mut buffer = this.data as GLuint;
+    gl::DeleteBuffers(1, &mut buffer)
 }
-
-pub mod buffer;
-pub mod device;
-pub mod error;
-pub mod event;
-pub mod instance;
-pub mod program;
-pub mod queue;
-pub mod texture;
 

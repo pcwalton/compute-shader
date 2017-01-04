@@ -25,7 +25,7 @@ pub struct QueueFunctions {
     pub submit_compute: extern "Rust" fn(this: &Queue,
                                          program: &Program,
                                          num_groups: &[u32],
-                                         uniforms: &[Uniform],
+                                         uniforms: &[(u32, Uniform)],
                                          events: &[Event])
                                          -> Result<Event, Error>,
     pub submit_clear: extern "Rust" fn(this: &Queue,

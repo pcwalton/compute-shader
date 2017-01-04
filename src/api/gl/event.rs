@@ -8,26 +8,22 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate euclid;
-extern crate gl;
+use error::Error;
+use event::{Event, EventFunctions};
+use gl;
 
-#[cfg(target_os = "macos")]
-extern crate core_foundation;
-#[cfg(target_os = "macos")]
-extern crate io_surface;
+// TODO(pcwalton): Use sync objects?
+pub static EVENT_FUNCTIONS: EventFunctions = EventFunctions {
+    destroy: destroy,
+    wait: wait,
+};
 
-pub mod api {
-    #[cfg(target_os = "macos")]
-    pub mod cl;
-    pub mod gl;
+unsafe fn destroy(_: &Event) {}
+
+fn wait(_: &Event) -> Result<(), Error> {
+    unsafe {
+        gl::Finish();
+        Ok(())
+    }
 }
-
-pub mod buffer;
-pub mod device;
-pub mod error;
-pub mod event;
-pub mod instance;
-pub mod program;
-pub mod queue;
-pub mod texture;
 
