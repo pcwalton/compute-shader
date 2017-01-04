@@ -12,11 +12,12 @@ use api::cl::device::DEVICE_FUNCTIONS;
 use api::cl::ffi::{self, CL_DEVICE_TYPE_GPU, CL_SUCCESS};
 use device::Device;
 use error::Error;
-use instance::{Instance, InstanceFunctions};
+use instance::{Instance, InstanceFunctions, ShadingLanguage};
 use std::ptr;
 
 pub static INSTANCE_FUNCTIONS: InstanceFunctions = InstanceFunctions {
     destroy: destroy,
+    shading_language: shading_language,
     create_device: create_device,
 };
 
@@ -28,6 +29,10 @@ pub fn create() -> Instance {
 }
 
 unsafe fn destroy(_: &Instance) {}
+
+fn shading_language(_: &Instance) -> ShadingLanguage {
+    ShadingLanguage::Cl
+}
 
 fn create_device(_: &Instance) -> Result<Device, Error> {
     unsafe {
