@@ -19,11 +19,11 @@ pub static INSTANCE_FUNCTIONS: InstanceFunctions = InstanceFunctions {
     create_device: create_device,
 };
 
-pub fn create() -> Instance {
-    Instance {
+pub fn create() -> Result<Instance, Error> {
+    Ok(Instance {
         data: 0,
         functions: &INSTANCE_FUNCTIONS,
-    }
+    })
 }
 
 unsafe fn destroy(_: &Instance) {}

@@ -53,7 +53,15 @@ fn create_program(_: &Device, source: &str) -> Result<Program, Error> {
         let mut compile_status = 0;
         gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut compile_status);
         if compile_status != gl::TRUE as GLint {
-            return Err(Error::Failed)
+            let mut info_log_length = 0;
+            gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut info_log_length);
+            let mut info_log_buffer = vec![0; info_log_length as usize + 1];
+            gl::GetShaderInfoLog(shader,
+                                 info_log_length,
+                                 ptr::null_mut(),
+                                 info_log_buffer.as_mut_ptr() as *mut i8);
+            let info_log = String::from_utf8(info_log_buffer).unwrap_or("".to_owned());
+            return Err(Error::CompileFailed(info_log))
         }
 
         let program = gl::CreateProgram();
@@ -63,7 +71,15 @@ fn create_program(_: &Device, source: &str) -> Result<Program, Error> {
         let mut link_status = 0;
         gl::GetProgramiv(program, gl::LINK_STATUS, &mut link_status);
         if link_status != gl::TRUE as GLint {
-            return Err(Error::Failed)
+            let mut info_log_length = 0;
+            gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut info_log_length);
+            let mut info_log_buffer = vec![0; info_log_length as usize + 1];
+            gl::GetProgramInfoLog(program,
+                                  info_log_length,
+                                  ptr::null_mut(),
+                                  info_log_buffer.as_mut_ptr() as *mut i8);
+            let info_log = String::from_utf8(info_log_buffer).unwrap_or("".to_owned());
+            return Err(Error::LinkFailed(info_log))
         }
 
         Ok(Program {

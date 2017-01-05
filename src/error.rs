@@ -12,5 +12,6 @@
 pub enum Error {
     Failed,
     CompileFailed(String),
+    LinkFailed(String),
 }
 
