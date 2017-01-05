@@ -38,7 +38,7 @@ fn finish(this: &Queue) -> Result<(), Error> {
         if ffi::clFinish(this.data as cl_command_queue) == CL_SUCCESS {
             Ok(())
         } else {
-            Err(Error)
+            Err(Error::Failed)
         }
     }
 }
@@ -55,7 +55,7 @@ fn submit_compute(this: &Queue,
                                          1,
                                          &mut kernel,
                                          ptr::null_mut()) != CL_SUCCESS {
-            return Err(Error)
+            return Err(Error::Failed)
         }
 
         for &(uniform_index, ref uniform) in uniforms {
@@ -76,7 +76,7 @@ fn submit_compute(this: &Queue,
             }
 
             if ffi::clSetKernelArg(kernel, uniform_index, arg_size, arg_value) != CL_SUCCESS {
-                return Err(Error)
+                return Err(Error::Failed)
             }
         }
 
@@ -86,6 +86,11 @@ fn submit_compute(this: &Queue,
         }
 
         let event_wait_list: Vec<_> = events.iter().map(|event| event.data as cl_event).collect();
+        let event_wait_list_ptr = if event_wait_list.is_empty() {
+            ptr::null()
+        } else {
+            event_wait_list.as_ptr()
+        };
 
         let mut event = ptr::null_mut();
 
@@ -96,9 +101,9 @@ fn submit_compute(this: &Queue,
                                        global_work_size.as_mut_ptr(),
                                        ptr::null(),
                                        event_wait_list.len() as u32,
-                                       event_wait_list.as_ptr(),
+                                       event_wait_list_ptr,
                                        &mut event) != CL_SUCCESS {
-            return Err(Error)
+            return Err(Error::Failed)
         }
 
         ffi::clReleaseKernel(kernel);
@@ -142,6 +147,11 @@ fn submit_clear(this: &Queue, texture: &Texture, color: &Color, events: &[Event]
         }
 
         let event_wait_list: Vec<_> = events.iter().map(|event| event.data as cl_event).collect();
+        let event_wait_list_ptr = if event_wait_list.is_empty() {
+            ptr::null()
+        } else {
+            event_wait_list.as_ptr()
+        };
 
         let mut event = ptr::null_mut();
 
@@ -151,14 +161,14 @@ fn submit_clear(this: &Queue, texture: &Texture, color: &Color, events: &[Event]
                                    origin.as_ptr(),
                                    size.as_mut_ptr(),
                                    event_wait_list.len() as u32,
-                                   event_wait_list.as_ptr(),
+                                   event_wait_list_ptr,
                                    &mut event) == CL_SUCCESS {
             Ok(Event {
                 data: event as usize,
                 functions: &EVENT_FUNCTIONS,
             })
         } else {
-            Err(Error)
+            Err(Error::Failed)
         }
     }
 }
@@ -170,9 +180,12 @@ fn submit_read_buffer(this: &Queue,
                       events: &[Event])
                       -> Result<Event, Error> {
     unsafe {
-        let mut event_wait_list: Vec<_> = events.iter()
-                                                .map(|event| event.data as cl_event)
-                                                .collect();
+        let event_wait_list: Vec<_> = events.iter().map(|event| event.data as cl_event).collect();
+        let event_wait_list_ptr = if event_wait_list.is_empty() {
+            ptr::null()
+        } else {
+            event_wait_list.as_ptr()
+        };
 
         let mut event = ptr::null_mut();
 
@@ -183,14 +196,14 @@ fn submit_read_buffer(this: &Queue,
                                     dest.len(),
                                     dest.as_mut_ptr() as *mut c_void,
                                     event_wait_list.len() as u32,
-                                    event_wait_list.as_mut_ptr(),
+                                    event_wait_list_ptr,
                                     &mut event) == CL_SUCCESS {
             Ok(Event {
                 data: event as usize,
                 functions: &EVENT_FUNCTIONS,
             })
         } else {
-            Err(Error)
+            Err(Error::Failed)
         }
     }
 }

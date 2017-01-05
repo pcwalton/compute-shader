@@ -53,7 +53,7 @@ fn create_program(_: &Device, source: &str) -> Result<Program, Error> {
         let mut compile_status = 0;
         gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut compile_status);
         if compile_status != gl::TRUE as GLint {
-            return Err(Error)
+            return Err(Error::Failed)
         }
 
         let program = gl::CreateProgram();
@@ -63,7 +63,7 @@ fn create_program(_: &Device, source: &str) -> Result<Program, Error> {
         let mut link_status = 0;
         gl::GetProgramiv(program, gl::LINK_STATUS, &mut link_status);
         if link_status != gl::TRUE as GLint {
-            return Err(Error)
+            return Err(Error::Failed)
         }
 
         Ok(Program {
@@ -83,7 +83,7 @@ fn create_buffer<'a>(_: &Device, _: Protection, mut data: BufferData<'a>)
         match data {
             BufferData::HostAllocated(ref mut host_buffer) => {
                 gl::BufferData(gl::COPY_WRITE_BUFFER,
-                               host_buffer.len() as isize,
+                               host_buffer.size() as isize,
                                host_buffer.as_ptr() as *const c_void,
                                gl::DYNAMIC_DRAW)
             }

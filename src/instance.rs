@@ -8,6 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use api;
 use device::Device;
 use error::Error;
 
@@ -45,6 +46,16 @@ impl Instance {
     #[inline]
     pub fn create_device(&self) -> Result<Device, Error> {
         (self.functions.create_device)(self)
+    }
+
+    #[cfg(target_os = "macos")]
+    pub fn new() -> Result<Instance, Error> {
+        api::cl::instance::create()
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    pub fn new() -> Result<Instance, Error> {
+        api::gl::instance::create()
     }
 }
 

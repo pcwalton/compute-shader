@@ -21,11 +21,11 @@ pub static INSTANCE_FUNCTIONS: InstanceFunctions = InstanceFunctions {
     create_device: create_device,
 };
 
-pub fn create() -> Instance {
-    Instance {
+pub fn create() -> Result<Instance, Error> {
+    Ok(Instance {
         data: 0,
         functions: &INSTANCE_FUNCTIONS,
-    }
+    })
 }
 
 unsafe fn destroy(_: &Instance) {}
@@ -42,7 +42,7 @@ fn create_device(_: &Instance) -> Result<Device, Error> {
                                1,
                                &mut device_id,
                                &mut num_devices) != CL_SUCCESS || num_devices == 0 {
-            return Err(Error)
+            return Err(Error::Failed)
         }
 
         let context = ffi::clCreateContext(ptr::null_mut(),
@@ -52,7 +52,7 @@ fn create_device(_: &Instance) -> Result<Device, Error> {
                                            ptr::null_mut(),
                                            ptr::null_mut());
         if context.is_null() {
-            return Err(Error)
+            return Err(Error::Failed)
         }
 
         Ok(Device {

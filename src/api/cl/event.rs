@@ -27,7 +27,7 @@ fn wait(this: &Event) -> Result<(), Error> {
         if ffi::clWaitForEvents(1, &event) == CL_SUCCESS {
             Ok(())
         } else {
-            Err(Error)
+            Err(Error::Failed)
         }
     }
 }

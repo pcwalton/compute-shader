@@ -9,10 +9,10 @@
 // except according to those terms.
 
 use api::cl::buffer::BUFFER_FUNCTIONS;
-use api::cl::ffi::{self, CL_CONTEXT_DEVICES, CL_MEM_READ_ONLY, CL_MEM_READ_WRITE};
-use api::cl::ffi::{CL_MEM_USE_HOST_PTR, CL_MEM_WRITE_ONLY, CL_QUEUE_PROFILING_ENABLE, CL_R};
-use api::cl::ffi::{CL_SUCCESS, CL_UNSIGNED_INT8, cl_context, cl_device_id, cl_image_format};
-use api::cl::ffi::{cl_mem_flags};
+use api::cl::ffi::{self, CL_CONTEXT_DEVICES, CL_MEM_COPY_HOST_PTR, CL_MEM_READ_ONLY};
+use api::cl::ffi::{CL_MEM_READ_WRITE, CL_MEM_USE_HOST_PTR, CL_MEM_WRITE_ONLY};
+use api::cl::ffi::{CL_QUEUE_PROFILING_ENABLE, CL_R, CL_SUCCESS, CL_UNSIGNED_INT8, cl_context};
+use api::cl::ffi::{cl_device_id, cl_image_format, cl_mem_flags};
 use api::cl::program::PROGRAM_FUNCTIONS;
 use api::cl::queue::QUEUE_FUNCTIONS;
 use api::cl::texture::TEXTURE_FUNCTIONS;
@@ -59,7 +59,7 @@ fn create_queue(this: &Device) -> Result<Queue, Error> {
                                  mem::size_of::<cl_device_id>(),
                                  &mut device_id as *mut cl_device_id as *mut c_void,
                                  ptr::null_mut()) != CL_SUCCESS {
-            return Err(Error)
+            return Err(Error::Failed)
         }
 
         let queue = ffi::clCreateCommandQueue(this.data as cl_context,
@@ -72,7 +72,7 @@ fn create_queue(this: &Device) -> Result<Queue, Error> {
                 functions: &QUEUE_FUNCTIONS,
             })
         } else {
-            Err(Error)
+            Err(Error::Failed)
         }
     }
 }
@@ -87,7 +87,7 @@ fn create_program(this: &Device, source: &str) -> Result<Program, Error> {
                                                      &lengths,
                                                      ptr::null_mut());
         if program == ptr::null_mut() {
-            return Err(Error)
+            return Err(Error::Failed)
         }
 
         let mut device_id: cl_device_id = ptr::null_mut();
@@ -96,7 +96,7 @@ fn create_program(this: &Device, source: &str) -> Result<Program, Error> {
                                  mem::size_of::<cl_device_id>(),
                                  &mut device_id as *mut cl_device_id as *mut c_void,
                                  ptr::null_mut()) != CL_SUCCESS {
-            return Err(Error)
+            return Err(Error::Failed)
         }
 
         let null = 0;
@@ -112,7 +112,7 @@ fn create_program(this: &Device, source: &str) -> Result<Program, Error> {
                 functions: &PROGRAM_FUNCTIONS,
             })
         } else {
-            Err(Error)
+            Err(Error::Failed)
         }
     }
 }
@@ -124,9 +124,14 @@ fn create_buffer<'a>(this: &Device, protection: Protection, mut data: BufferData
         let (size, host_ptr);
         match data {
             BufferData::HostAllocated(ref mut buffer) => {
-                mem_flags |= CL_MEM_USE_HOST_PTR;
-                size = buffer.len();
-                host_ptr = buffer.as_mut_ptr();
+                if protection == Protection::ReadOnly {
+                    mem_flags |= CL_MEM_USE_HOST_PTR
+                } else {
+                    mem_flags |= CL_MEM_COPY_HOST_PTR
+                }
+
+                size = buffer.size();
+                host_ptr = buffer.as_ptr()
             }
             BufferData::Uninitialized(in_size) => {
                 size = in_size;
@@ -146,7 +151,7 @@ fn create_buffer<'a>(this: &Device, protection: Protection, mut data: BufferData
                 phantom: PhantomData,
             })
         } else {
-            Err(Error)
+            Err(Error::Failed)
         }
     }
 }
@@ -183,7 +188,7 @@ fn create_texture(this: &Device, protection: Protection, size: &Size2D<u32>)
                                                            &mut error);
 
         if error != CL_SUCCESS || image.is_null() {
-            return Err(Error)
+            return Err(Error::Failed)
         }
 
         let surface_ref = surface.as_concrete_TypeRef();

@@ -53,6 +53,7 @@ impl ::std::default::Default for _cl_image_format {
 }
 pub type cl_image_format = _cl_image_format;
 
+#[link(name = "OpenCL", kind = "framework")]
 extern "C" {
     pub fn clGetDeviceIDs(arg1: cl_platform_id, arg2: cl_device_type,
                           arg3: cl_uint, arg4: *mut cl_device_id,
@@ -157,6 +158,7 @@ pub const CL_MEM_READ_WRITE: cl_mem_flags = 1 << 0;
 pub const CL_MEM_WRITE_ONLY: cl_mem_flags = 1 << 1;
 pub const CL_MEM_READ_ONLY: cl_mem_flags = 1 << 2;
 pub const CL_MEM_USE_HOST_PTR: cl_mem_flags = 1 << 3;
+pub const CL_MEM_COPY_HOST_PTR: cl_mem_flags = 1 << 5;
 
 pub const CL_IMAGE_WIDTH: cl_image_info = 0x1114;
 pub const CL_IMAGE_HEIGHT: cl_image_info = 0x1115;
