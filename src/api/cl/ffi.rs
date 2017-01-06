@@ -35,6 +35,7 @@ pub type cl_device_type = cl_bitfield;
 pub type cl_command_queue_properties = cl_bitfield;
 pub type cl_context_properties = intptr_t;
 pub type cl_context_info = cl_uint;
+pub type cl_program_build_info = cl_uint;
 pub type cl_channel_order = cl_uint;
 pub type cl_channel_type = cl_uint;
 pub type cl_mem_flags = cl_bitfield;
@@ -100,6 +101,13 @@ extern "C" {
                                                                          arg2:
                                                                              *mut ::std::os::raw::c_void)>,
                           arg6: *mut ::std::os::raw::c_void) -> cl_int;
+    pub fn clGetProgramBuildInfo(program: cl_program,
+                                 device: cl_device_id,
+                                 param_name: cl_program_build_info,
+                                 param_value_size: size_t,
+                                 param_value: *mut ::std::os::raw::c_void,
+                                 param_value_size_ret: *mut size_t)
+                                 -> cl_int;
     pub fn clCreateKernelsInProgram(arg1: cl_program, arg2: cl_uint,
                                     arg3: *mut cl_kernel, arg4: *mut cl_uint)
      -> cl_int;
@@ -163,4 +171,6 @@ pub const CL_MEM_COPY_HOST_PTR: cl_mem_flags = 1 << 5;
 pub const CL_IMAGE_WIDTH: cl_image_info = 0x1114;
 pub const CL_IMAGE_HEIGHT: cl_image_info = 0x1115;
 pub const CL_IMAGE_DEPTH: cl_image_info = 0x1116;
+
+pub const CL_PROGRAM_BUILD_LOG: cl_program_build_info = 0x1183;
 

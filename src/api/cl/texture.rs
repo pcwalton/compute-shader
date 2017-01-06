@@ -56,6 +56,7 @@ fn bind_to(this: &Texture, external_texture: &ExternalTexture) -> Result<(), Err
                 // TODO(pcwalton): Support formats other than R8!
                 // FIXME(pcwalton): Fail more gracefully than panicking! (Really an `io-surface-rs`
                 // bug.)
+                gl::ActiveTexture(gl::TEXTURE0);
                 gl::BindTexture(gl::TEXTURE_RECTANGLE, texture);
                 let io_surface = mem::transmute::<usize, IOSurfaceRef>(this.data[1]);
                 let io_surface = IOSurface::wrap_under_get_rule(io_surface);

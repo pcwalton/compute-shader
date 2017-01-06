@@ -11,7 +11,7 @@ use byteorder::{NativeEndian, ReadBytesExt};
 use compute_shader::buffer::{BufferData, HostAllocatedData, Protection};
 use compute_shader::instance::{Instance, ShadingLanguage};
 use compute_shader::queue::Uniform;
-use glfw::{Context, WindowHint, WindowMode};
+use glfw::{Context, OpenGlProfileHint, WindowHint, WindowMode};
 use rand::Rng;
 use std::env;
 use std::io::Cursor;
@@ -35,15 +35,12 @@ pub fn main() {
 
     let mut glfw = glfw::init(glfw::LOG_ERRORS).unwrap();
     glfw.window_hint(WindowHint::ContextVersion(3, 3));
+    glfw.window_hint(WindowHint::OpenGlForwardCompat(true));
+    glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
     glfw.window_hint(WindowHint::Visible(false));
-    let mut context = glfw.create_window(320, 240, "matrix-multiply", WindowMode::Windowed);
-    if context.is_none() {
-        // This branch triggers on macOS…
-        glfw.window_hint(WindowHint::ContextVersion(1, 0));
-        context = glfw.create_window(320, 240, "matrix-multiply", WindowMode::Windowed);
-    }
+    let context = glfw.create_window(320, 240, "matrix-multiply", WindowMode::Windowed);
 
-    let mut window = context.expect("Couldn't create a GLFW window!").0;
+    let mut window = context.expect("Couldn't create a window!").0;
     window.make_current();
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const c_void);
 

@@ -11,8 +11,8 @@
 use api::cl::buffer::BUFFER_FUNCTIONS;
 use api::cl::ffi::{self, CL_CONTEXT_DEVICES, CL_MEM_COPY_HOST_PTR, CL_MEM_READ_ONLY};
 use api::cl::ffi::{CL_MEM_READ_WRITE, CL_MEM_USE_HOST_PTR, CL_MEM_WRITE_ONLY};
-use api::cl::ffi::{CL_QUEUE_PROFILING_ENABLE, CL_R, CL_SUCCESS, CL_UNSIGNED_INT8, cl_context};
-use api::cl::ffi::{cl_device_id, cl_image_format, cl_mem_flags};
+use api::cl::ffi::{CL_PROGRAM_BUILD_LOG, CL_QUEUE_PROFILING_ENABLE, CL_R, CL_SUCCESS};
+use api::cl::ffi::{CL_UNSIGNED_INT8, cl_context, cl_device_id, cl_image_format, cl_mem_flags};
 use api::cl::program::PROGRAM_FUNCTIONS;
 use api::cl::queue::QUEUE_FUNCTIONS;
 use api::cl::texture::TEXTURE_FUNCTIONS;
@@ -106,14 +106,24 @@ fn create_program(this: &Device, source: &str) -> Result<Program, Error> {
                                &device_id,
                                &null,
                                None,
-                               ptr::null_mut()) == CL_SUCCESS {
-            Ok(Program {
-                data: program as usize,
-                functions: &PROGRAM_FUNCTIONS,
-            })
-        } else {
-            Err(Error::Failed)
+                               ptr::null_mut()) != CL_SUCCESS {
+            let mut build_log = vec![0; 32768];
+            let mut build_log_size = build_log.len();
+            ffi::clGetProgramBuildInfo(program,
+                                       device_id,
+                                       CL_PROGRAM_BUILD_LOG,
+                                       build_log.len() - 1,
+                                       build_log.as_mut_ptr() as *mut c_void,
+                                       &mut build_log_size);
+            build_log.truncate(build_log_size);
+
+            return Err(Error::CompileFailed(String::from_utf8(build_log).unwrap_or("".to_owned())))
         }
+
+        Ok(Program {
+            data: program as usize,
+            functions: &PROGRAM_FUNCTIONS,
+        })
     }
 }
 
