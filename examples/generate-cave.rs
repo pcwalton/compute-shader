@@ -5,6 +5,7 @@ extern crate compute_shader;
 extern crate euclid;
 extern crate gl;
 extern crate glfw;
+extern crate lord_drawquaad;
 extern crate rand;
 
 use compute_shader::buffer::{BufferData, Protection};
@@ -12,10 +13,9 @@ use compute_shader::instance::{Instance, ShadingLanguage};
 use compute_shader::queue::Uniform;
 use compute_shader::texture::ExternalTexture;
 use euclid::Size2D;
-use gl::types::{GLint, GLsizei, GLuint, GLvoid};
-use glfw::{Action, Context, Key, OpenGlProfileHint, Window, WindowEvent, WindowHint, WindowMode};
+use gl::types::GLint;
+use glfw::{Action, Context, Key, OpenGlProfileHint, WindowEvent, WindowHint, WindowMode};
 use rand::Rng;
-use std::mem;
 use std::os::raw::c_void;
 
 const WIDTH: u32 = 800;
@@ -52,6 +52,8 @@ pub fn main() {
     };
     let program = device.create_program(source).unwrap();
 
+    let draw_context = lord_drawquaad::Context::new();
+
     let buffer_data = BufferData::Uninitialized(WIDTH as usize * HEIGHT as usize);
     let buffer = device.create_buffer(Protection::ReadWrite, buffer_data).unwrap();
     let dest = device.create_texture(Protection::WriteOnly, &Size2D::new(WIDTH, HEIGHT)).unwrap();
@@ -61,6 +63,12 @@ pub fn main() {
     unsafe {
         gl::GenTextures(1, &mut texture);
         dest.bind_to(&ExternalTexture::Gl(texture)).unwrap();
+
+        gl::BindTexture(gl::TEXTURE_RECTANGLE, texture);
+        gl::TexParameteri(gl::TEXTURE_RECTANGLE, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
+        gl::TexParameteri(gl::TEXTURE_RECTANGLE, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+        gl::TexParameteri(gl::TEXTURE_RECTANGLE, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
+        gl::TexParameteri(gl::TEXTURE_RECTANGLE, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
     }
 
     let groups = [WIDTH, HEIGHT];
@@ -73,7 +81,13 @@ pub fn main() {
     let queue = device.create_queue().unwrap();
     queue.submit_compute(&program, &groups, &uniforms, &[]).unwrap().wait().unwrap();
 
-    blit_texture_to_screen(&mut window, texture);
+    unsafe {
+        gl::ClearColor(1.0, 1.0, 1.0, 1.0);
+        gl::Clear(gl::COLOR_BUFFER_BIT);
+    }
+
+    draw_context.draw(texture);
+    window.swap_buffers();
 
     while !window.should_close() {
         glfw.poll_events();
@@ -87,103 +101,6 @@ pub fn main() {
         }
     }
 }
-
-fn blit_texture_to_screen(window: &mut Window, texture: GLuint) {
-    unsafe {
-        let vertex_shader = gl::CreateShader(gl::VERTEX_SHADER); glck();
-        let fragment_shader = gl::CreateShader(gl::FRAGMENT_SHADER); glck();
-        gl::ShaderSource(vertex_shader,
-                         1,
-                         &(VERTEX_SHADER.as_ptr() as *const u8 as *const i8),
-                         &(VERTEX_SHADER.len() as i32)); glck();
-        gl::ShaderSource(fragment_shader,
-                         1,
-                         &(FRAGMENT_SHADER.as_ptr() as *const u8 as *const i8),
-                         &(FRAGMENT_SHADER.len() as i32)); glck();
-        gl::CompileShader(vertex_shader); glck();
-        gl::CompileShader(fragment_shader); glck();
-
-        let program = gl::CreateProgram(); glck();
-        gl::AttachShader(program, vertex_shader); glck();
-        gl::AttachShader(program, fragment_shader); glck();
-        gl::LinkProgram(program); glck();
-
-        let mut vertex_array = 0;
-        gl::GenVertexArrays(1, &mut vertex_array); glck();
-        gl::BindVertexArray(vertex_array); glck();
-        gl::UseProgram(program); glck();
-
-        let texture_uniform = gl::GetUniformLocation(program,
-                                                     b"uTexture\0" as *const u8 as *const i8);
-        let position_attrib = gl::GetAttribLocation(program,
-                                                    b"aPosition\0" as *const u8 as *const i8);
-        let tex_coord_attrib = gl::GetAttribLocation(program,
-                                                     b"aTexCoord\0" as *const u8 as *const i8);
-
-        let (mut texture_width, mut texture_height) = (0, 0);
-        gl::ActiveTexture(gl::TEXTURE0); glck();
-        gl::BindTexture(gl::TEXTURE_RECTANGLE, texture); glck();
-        gl::GetTexLevelParameteriv(gl::TEXTURE_RECTANGLE,
-                                   0,
-                                   gl::TEXTURE_WIDTH,
-                                   &mut texture_width);
-        gl::GetTexLevelParameteriv(gl::TEXTURE_RECTANGLE,
-                                   0,
-                                   gl::TEXTURE_HEIGHT,
-                                   &mut texture_height);
-
-        gl::TexParameteri(gl::TEXTURE_RECTANGLE, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
-        gl::TexParameteri(gl::TEXTURE_RECTANGLE, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
-        gl::TexParameteri(gl::TEXTURE_RECTANGLE, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
-        gl::TexParameteri(gl::TEXTURE_RECTANGLE, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
-
-        let vertices = [
-            Vertex { position: [-1.0,  1.0], tex_coord: [            0, texture_height] },
-            Vertex { position: [ 1.0,  1.0], tex_coord: [texture_width, texture_height] },
-            Vertex { position: [-1.0, -1.0], tex_coord: [            0,              0] },
-            Vertex { position: [ 1.0, -1.0], tex_coord: [texture_width,              0] },
-        ];
-
-        let mut buffer = 0;
-        gl::GenBuffers(1, &mut buffer); glck();
-        gl::BindBuffer(gl::ARRAY_BUFFER, buffer); glck();
-        gl::BufferData(gl::ARRAY_BUFFER,
-                       mem::size_of::<[Vertex; 4]>() as isize,
-                       &vertices as *const Vertex as *const c_void,
-                       gl::STATIC_DRAW); glck();
-
-        gl::VertexAttribPointer(position_attrib as GLuint,
-                                2,
-                                gl::FLOAT,
-                                gl::FALSE,
-                                mem::size_of::<Vertex>() as GLsizei,
-                                0 as *const GLvoid); glck();
-        gl::VertexAttribPointer(tex_coord_attrib as GLuint,
-                                2,
-                                gl::INT,
-                                gl::FALSE,
-                                mem::size_of::<Vertex>() as GLsizei,
-                                8 as *const GLvoid); glck();
-        gl::EnableVertexAttribArray(position_attrib as GLuint); glck();
-        gl::EnableVertexAttribArray(tex_coord_attrib as GLuint); glck();
-
-        gl::Uniform1i(texture_uniform, 0); glck();
-
-        gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4); glck();
-
-        window.swap_buffers();
-    }
-}
-
-#[cfg(debug_assertions)]
-fn glck() {
-    unsafe {
-        assert_eq!(gl::GetError(), gl::NO_ERROR);
-    }
-}
-
-#[cfg(not(debug_assertions))]
-fn glck() {}
 
 static CL_SHADER: &'static str = r#"
     // Xorshift32
@@ -250,34 +167,6 @@ static CL_SHADER: &'static str = r#"
 
         uint4 color = (uint4)((uint)value(on), (uint)value(on), (uint)value(on), (uint)value(on));
         write_imageui(gTexture, home, color);
-    }
-"#;
-
-static VERTEX_SHADER: &'static str = r#"
-    #version 330
-
-    in vec2 aPosition;
-    in vec2 aTexCoord;
-
-    out vec2 vTexCoord;
-
-    void main() {
-        vTexCoord = aTexCoord;
-        gl_Position = vec4(aPosition, 0.0f, 1.0f);
-    }
-"#;
-
-static FRAGMENT_SHADER: &'static str = r#"
-    #version 330
-
-    uniform sampler2DRect uTexture;
-
-    in vec2 vTexCoord;
-
-    out vec4 oFragColor;
-
-    void main() {
-        oFragColor = vec4(texture(uTexture, vTexCoord).rrr * 0.25, 1.0);
     }
 "#;
 
