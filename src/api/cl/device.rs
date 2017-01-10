@@ -10,9 +10,9 @@
 
 use api::cl::buffer::BUFFER_FUNCTIONS;
 use api::cl::ffi::{self, CL_CONTEXT_DEVICES, CL_MEM_COPY_HOST_PTR, CL_MEM_READ_ONLY};
-use api::cl::ffi::{CL_MEM_READ_WRITE, CL_MEM_USE_HOST_PTR, CL_MEM_WRITE_ONLY};
-use api::cl::ffi::{CL_PROGRAM_BUILD_LOG, CL_QUEUE_PROFILING_ENABLE, CL_R, CL_SUCCESS};
-use api::cl::ffi::{CL_UNSIGNED_INT8, cl_context, cl_device_id, cl_image_format, cl_mem_flags};
+use api::cl::ffi::{CL_MEM_READ_WRITE, CL_MEM_WRITE_ONLY, CL_PROGRAM_BUILD_LOG};
+use api::cl::ffi::{CL_QUEUE_PROFILING_ENABLE, CL_R, CL_SUCCESS, CL_UNSIGNED_INT8, cl_context};
+use api::cl::ffi::{cl_device_id, cl_image_format, cl_mem_flags};
 use api::cl::program::PROGRAM_FUNCTIONS;
 use api::cl::queue::QUEUE_FUNCTIONS;
 use api::cl::texture::TEXTURE_FUNCTIONS;
@@ -22,7 +22,6 @@ use error::Error;
 use euclid::Size2D;
 use program::Program;
 use queue::Queue;
-use std::marker::PhantomData;
 use std::mem;
 use std::os::raw::c_void;
 use std::ptr;
@@ -127,18 +126,14 @@ fn create_program(this: &Device, source: &str) -> Result<Program, Error> {
     }
 }
 
-fn create_buffer<'a>(this: &Device, protection: Protection, mut data: BufferData<'a>)
-                     -> Result<Buffer<'a>, Error> {
+fn create_buffer(this: &Device, protection: Protection, mut data: BufferData)
+                 -> Result<Buffer, Error> {
     unsafe {
         let mut mem_flags = protection_to_mem_flags(protection);
         let (size, host_ptr);
         match data {
             BufferData::HostAllocated(ref mut buffer) => {
-                if protection == Protection::ReadOnly {
-                    mem_flags |= CL_MEM_USE_HOST_PTR
-                } else {
-                    mem_flags |= CL_MEM_COPY_HOST_PTR
-                }
+                mem_flags |= CL_MEM_COPY_HOST_PTR;
 
                 size = buffer.size();
                 host_ptr = buffer.as_ptr()
@@ -158,7 +153,6 @@ fn create_buffer<'a>(this: &Device, protection: Protection, mut data: BufferData
             Ok(Buffer {
                 data: buffer as usize,
                 functions: &BUFFER_FUNCTIONS,
-                phantom: PhantomData,
             })
         } else {
             Err(Error::Failed)

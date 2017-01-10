@@ -8,14 +8,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::marker::PhantomData;
 use std::mem;
 use std::slice;
 
-pub struct Buffer<'a> {
+pub struct Buffer {
     pub data: usize,
     pub functions: &'static BufferFunctions,
-    pub phantom: PhantomData<&'a ()>,
 }
 
 pub struct BufferFunctions {
@@ -37,7 +35,7 @@ pub enum BufferData<'a> {
 #[derive(Clone, Copy)]
 pub struct HostAllocatedData<'a>(&'a [u8]);
 
-impl<'a> Drop for Buffer<'a> {
+impl Drop for Buffer {
     fn drop(&mut self) {
         unsafe {
             (self.functions.destroy)(self)

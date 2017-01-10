@@ -24,10 +24,8 @@ pub struct DeviceFunctions {
     pub destroy: unsafe extern "Rust" fn(this: &Device),
     pub create_queue: extern "Rust" fn(this: &Device) -> Result<Queue, Error>,
     pub create_program: extern "Rust" fn(this: &Device, source: &str) -> Result<Program, Error>,
-    pub create_buffer: for<'a> extern "Rust" fn(this: &Device,
-                                                protection: Protection,
-                                                data: BufferData<'a>)
-                                                -> Result<Buffer<'a>, Error>,
+    pub create_buffer: extern "Rust" fn(this: &Device, protection: Protection, data: BufferData)
+                                        -> Result<Buffer, Error>,
     pub create_texture: extern "Rust" fn(this: &Device, protection: Protection, size: &Size2D<u32>)
                                          -> Result<Texture, Error>,
 }
@@ -52,8 +50,8 @@ impl Device {
     }
 
     #[inline]
-    pub fn create_buffer<'a>(&self, protection: Protection, data: BufferData<'a>)
-                             -> Result<Buffer<'a>, Error> {
+    pub fn create_buffer(&self, protection: Protection, data: BufferData)
+                         -> Result<Buffer, Error> {
         (self.functions.create_buffer)(self, protection, data)
     }
 

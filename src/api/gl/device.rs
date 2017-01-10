@@ -20,7 +20,6 @@ use gl::types::GLint;
 use gl;
 use program::Program;
 use queue::Queue;
-use std::marker::PhantomData;
 use std::os::raw::c_void;
 use std::ptr;
 use texture::Texture;
@@ -89,8 +88,7 @@ fn create_program(_: &Device, source: &str) -> Result<Program, Error> {
     }
 }
 
-fn create_buffer<'a>(_: &Device, _: Protection, mut data: BufferData<'a>)
-                     -> Result<Buffer<'a>, Error> {
+fn create_buffer(_: &Device, _: Protection, mut data: BufferData) -> Result<Buffer, Error> {
     unsafe {
         let mut buffer = 0;
         gl::GenBuffers(1, &mut buffer);
@@ -111,7 +109,6 @@ fn create_buffer<'a>(_: &Device, _: Protection, mut data: BufferData<'a>)
         Ok(Buffer {
             data: buffer as usize,
             functions: &BUFFER_FUNCTIONS,
-            phantom: PhantomData,
         })
     }
 }

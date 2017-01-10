@@ -42,7 +42,7 @@ pub struct QueueFunctions {
 }
 
 pub enum Uniform<'a> {
-    Buffer(&'a Buffer<'a>),
+    Buffer(&'a Buffer),
     Texture(&'a Texture),
     U32(u32),
 }
