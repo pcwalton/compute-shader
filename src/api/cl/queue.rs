@@ -74,7 +74,7 @@ fn submit_compute(this: &Queue,
                     arg_value = value as *const u32 as *const c_void
                 }
                 Uniform::UVec4(ref value) => {
-                    arg_size = mem::size_of::<u32>();
+                    arg_size = mem::size_of::<[u32; 4]>();
                     arg_value = &value[0] as *const u32 as *const c_void
                 }
             }
