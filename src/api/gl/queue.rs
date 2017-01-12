@@ -68,6 +68,13 @@ fn submit_compute(_: &Queue,
                     next_texture_unit += 1
                 }
                 Uniform::U32(value) => gl::Uniform1ui(uniform_index as GLint, value),
+                Uniform::UVec4(values) => {
+                    gl::Uniform4ui(uniform_index as GLint,
+                                   values[0],
+                                   values[1],
+                                   values[2],
+                                   values[3])
+                }
             }
         }
 

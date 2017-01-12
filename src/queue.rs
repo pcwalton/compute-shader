@@ -45,6 +45,7 @@ pub enum Uniform<'a> {
     Buffer(&'a Buffer),
     Texture(&'a Texture),
     U32(u32),
+    UVec4([u32; 4]),
 }
 
 impl Drop for Queue {
