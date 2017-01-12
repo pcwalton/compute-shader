@@ -16,6 +16,8 @@ use texture::{ExternalTexture, Texture, TextureFunctions};
 pub static TEXTURE_FUNCTIONS: TextureFunctions = TextureFunctions {
     destroy: destroy,
     bind_to: bind_to,
+    width: width,
+    height: height,
 };
 
 unsafe fn destroy(this: &Texture) {
@@ -38,6 +40,26 @@ fn bind_to(this: &Texture, external_texture: &ExternalTexture) -> Result<(), Err
             }
         }
         Ok(())
+    }
+}
+
+fn width(this: &Texture) -> Result<u32, Error> {
+    unsafe {
+        let mut width = 0;
+        gl::ActiveTexture(gl::TEXTURE0);
+        gl::BindTexture(gl::TEXTURE_RECTANGLE, this.data[0] as GLuint);
+        gl::GetTexLevelParameteriv(gl::TEXTURE_RECTANGLE, 0, gl::TEXTURE_WIDTH, &mut width);
+        Ok(width as u32)
+    }
+}
+
+fn height(this: &Texture) -> Result<u32, Error> {
+    unsafe {
+        let mut height = 0;
+        gl::ActiveTexture(gl::TEXTURE0);
+        gl::BindTexture(gl::TEXTURE_RECTANGLE, this.data[0] as GLuint);
+        gl::GetTexLevelParameteriv(gl::TEXTURE_RECTANGLE, 0, gl::TEXTURE_HEIGHT, &mut height);
+        Ok(height as u32)
     }
 }
 

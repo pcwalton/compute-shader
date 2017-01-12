@@ -19,6 +19,8 @@ pub struct TextureFunctions {
     pub destroy: unsafe extern "Rust" fn(this: &Texture),
     pub bind_to: extern "Rust" fn(this: &Texture, external_texture: &ExternalTexture)
                                   -> Result<(), Error>,
+    pub width: extern "Rust" fn(this: &Texture) -> Result<u32, Error>,
+    pub height: extern "Rust" fn(this: &Texture) -> Result<u32, Error>,
 }
 
 pub enum ExternalTexture {
@@ -42,6 +44,16 @@ impl Texture {
     #[inline]
     pub fn bind_to(&self, external_texture: &ExternalTexture) -> Result<(), Error> {
         (self.functions.bind_to)(self, external_texture)
+    }
+
+    #[inline]
+    pub fn width(&self) -> Result<u32, Error> {
+        (self.functions.width)(self)
+    }
+
+    #[inline]
+    pub fn height(&self) -> Result<u32, Error> {
+        (self.functions.height)(self)
     }
 }
 

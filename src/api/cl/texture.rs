@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use api::cl::ffi::{self, CL_IMAGE_HEIGHT, CL_IMAGE_WIDTH, cl_mem};
+use api::cl::ffi::{self, CL_IMAGE_HEIGHT, CL_IMAGE_WIDTH, CL_SUCCESS, cl_mem};
 use error::Error;
 use gl;
 use std::mem;
@@ -24,6 +24,8 @@ use io_surface::{IOSurface, IOSurfaceRef};
 pub static TEXTURE_FUNCTIONS: TextureFunctions = TextureFunctions {
     destroy: destroy,
     bind_to: bind_to,
+    width: width,
+    height: height,
 };
 
 #[cfg(target_os = "macos")]
@@ -41,17 +43,7 @@ fn bind_to(this: &Texture, external_texture: &ExternalTexture) -> Result<(), Err
     unsafe {
         match *external_texture {
             ExternalTexture::Gl(texture) => {
-                let (mut width, mut height): (usize, usize) = (0, 0);
-                ffi::clGetImageInfo(this.data[0] as cl_mem,
-                                    CL_IMAGE_WIDTH,
-                                    mem::size_of::<usize>(),
-                                    &mut width as *mut usize as *mut c_void,
-                                    ptr::null_mut());
-                ffi::clGetImageInfo(this.data[0] as cl_mem,
-                                    CL_IMAGE_HEIGHT,
-                                    mem::size_of::<usize>(),
-                                    &mut height as *mut usize as *mut c_void,
-                                    ptr::null_mut());
+                let (width, height) = (try!(width(this)), try!(height(this)));
 
                 // TODO(pcwalton): Support formats other than R8!
                 // FIXME(pcwalton): Fail more gracefully than panicking! (Really an `io-surface-rs`
@@ -67,6 +59,36 @@ fn bind_to(this: &Texture, external_texture: &ExternalTexture) -> Result<(), Err
                                               gl::UNSIGNED_BYTE);
                 Ok(())
             }
+        }
+    }
+}
+
+fn width(this: &Texture) -> Result<u32, Error> {
+    unsafe {
+        let mut width = 0usize;
+        if ffi::clGetImageInfo(this.data[0] as cl_mem,
+                               CL_IMAGE_WIDTH,
+                               mem::size_of::<usize>(),
+                               &mut width as *mut usize as *mut c_void,
+                               ptr::null_mut()) == CL_SUCCESS {
+            Ok(width as u32)
+        } else {
+            Err(Error::Failed)
+        }
+    }
+}
+
+fn height(this: &Texture) -> Result<u32, Error> {
+    unsafe {
+        let mut height = 0usize;
+        if ffi::clGetImageInfo(this.data[0] as cl_mem,
+                               CL_IMAGE_HEIGHT,
+                               mem::size_of::<usize>(),
+                               &mut height as *mut usize as *mut c_void,
+                               ptr::null_mut()) == CL_SUCCESS {
+            Ok(height as u32)
+        } else {
+            Err(Error::Failed)
         }
     }
 }
