@@ -106,7 +106,7 @@ fn create_program(this: &Device, source: &str) -> Result<Program, Error> {
                                &null,
                                None,
                                ptr::null_mut()) != CL_SUCCESS {
-            let mut build_log = vec![0; 32768];
+            let mut build_log = vec![0; 65536];
             let mut build_log_size = build_log.len();
             ffi::clGetProgramBuildInfo(program,
                                        device_id,
