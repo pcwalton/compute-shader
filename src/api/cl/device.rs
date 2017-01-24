@@ -9,7 +9,7 @@
 // except according to those terms.
 
 use api::cl::buffer::BUFFER_FUNCTIONS;
-use api::cl::ffi::{self, CL_CONTEXT_DEVICES, CL_MEM_COPY_HOST_PTR, CL_MEM_READ_ONLY};
+use api::cl::ffi::{self, CL_CONTEXT_DEVICES, CL_FLOAT, CL_MEM_COPY_HOST_PTR, CL_MEM_READ_ONLY};
 use api::cl::ffi::{CL_MEM_READ_WRITE, CL_MEM_WRITE_ONLY, CL_PROGRAM_BUILD_LOG};
 use api::cl::ffi::{CL_QUEUE_PROFILING_ENABLE, CL_R, CL_SUCCESS, CL_UNSIGNED_INT8, cl_context};
 use api::cl::ffi::{cl_device_id, cl_image_format, cl_mem_flags};
@@ -25,7 +25,7 @@ use queue::Queue;
 use std::mem;
 use std::os::raw::c_void;
 use std::ptr;
-use texture::Texture;
+use texture::{Format, Texture};
 
 #[cfg(target_os = "macos")]
 use core_foundation::base::TCFType;
@@ -160,25 +160,40 @@ fn create_buffer(this: &Device, protection: Protection, mut data: BufferData)
     }
 }
 
-// TODO(pcwalton): Support more image formats than R8.
 #[cfg(target_os = "macos")]
-fn create_texture(this: &Device, protection: Protection, size: &Size2D<u32>)
+fn create_texture(this: &Device, format: Format, protection: Protection, size: &Size2D<u32>)
                   -> Result<Texture, Error> {
     unsafe {
+        let bytes_per_element = match format {
+            Format::R8 => 1,
+            Format::R32F => 4,
+        };
+
         let properties = CFDictionary::from_CFType_pairs(&[
             (CFString::wrap_under_get_rule(kIOSurfaceWidth),
              CFNumber::from_i64(size.width as i64)),
             (CFString::wrap_under_get_rule(kIOSurfaceHeight),
              CFNumber::from_i64(size.height as i64)),
-            (CFString::wrap_under_get_rule(kIOSurfaceBytesPerElement), CFNumber::from_i32(1)),
+            (CFString::wrap_under_get_rule(kIOSurfaceBytesPerElement),
+             CFNumber::from_i32(bytes_per_element)),
         ]);
         let surface = io_surface::new(&properties);
 
         let protection = protection_to_mem_flags(protection);
 
-        let image_format = cl_image_format {
-            image_channel_order: CL_R,
-            image_channel_data_type: CL_UNSIGNED_INT8,
+        let image_format = match format {
+            Format::R8 => {
+                cl_image_format {
+                    image_channel_order: CL_R,
+                    image_channel_data_type: CL_UNSIGNED_INT8,
+                }
+            }
+            Format::R32F => {
+                cl_image_format {
+                    image_channel_order: CL_R,
+                    image_channel_data_type: CL_FLOAT,
+                }
+            }
         };
 
         let mut error = CL_SUCCESS;

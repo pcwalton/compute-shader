@@ -161,12 +161,14 @@ pub const CL_CONTEXT_DEVICES: cl_context_info = 0x1081;
 pub const CL_R: cl_channel_order = 0x10b0;
 
 pub const CL_UNSIGNED_INT8: cl_channel_type = 0x10da;
+pub const CL_FLOAT: cl_channel_type = 0x10de;
 
 pub const CL_MEM_READ_WRITE: cl_mem_flags = 1 << 0;
 pub const CL_MEM_WRITE_ONLY: cl_mem_flags = 1 << 1;
 pub const CL_MEM_READ_ONLY: cl_mem_flags = 1 << 2;
 pub const CL_MEM_COPY_HOST_PTR: cl_mem_flags = 1 << 5;
 
+pub const CL_IMAGE_FORMAT: cl_image_info = 0x1110;
 pub const CL_IMAGE_WIDTH: cl_image_info = 0x1114;
 pub const CL_IMAGE_HEIGHT: cl_image_info = 0x1115;
 pub const CL_IMAGE_DEPTH: cl_image_info = 0x1116;

@@ -9,6 +9,8 @@
 // except according to those terms.
 
 use error::Error;
+use gl::types::GLuint;
+use gl;
 
 pub struct Texture {
     pub data: [usize; 2],
@@ -25,6 +27,17 @@ pub struct TextureFunctions {
 
 pub enum ExternalTexture {
     Gl(u32),
+}
+
+/// The format of a texture.
+///
+/// TODO(pcwalton): Support more.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum Format {
+    /// 8-bit unsigned single-channel.
+    R8,
+    /// 32-bit single-channel floating-point.
+    R32F,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -54,6 +67,31 @@ impl Texture {
     #[inline]
     pub fn height(&self) -> Result<u32, Error> {
         (self.functions.height)(self)
+    }
+}
+
+impl Format {
+    #[inline]
+    pub fn gl_format(self) -> GLuint {
+        match self {
+            Format::R8 | Format::R32F => gl::RED,
+        }
+    }
+
+    #[inline]
+    pub fn gl_type(self) -> GLuint {
+        match self {
+            Format::R8 => gl::UNSIGNED_BYTE,
+            Format::R32F => gl::FLOAT,
+        }
+    }
+
+    #[inline]
+    pub fn gl_internal_format(self) -> GLuint {
+        match self {
+            Format::R8 => gl::R8,
+            Format::R32F => gl::R32F,
+        }
     }
 }
 

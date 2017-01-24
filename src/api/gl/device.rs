@@ -22,7 +22,7 @@ use program::Program;
 use queue::Queue;
 use std::os::raw::c_void;
 use std::ptr;
-use texture::Texture;
+use texture::{Format, Texture};
 
 pub static DEVICE_FUNCTIONS: DeviceFunctions = DeviceFunctions {
     destroy: destroy,
@@ -113,13 +113,15 @@ fn create_buffer(_: &Device, _: Protection, mut data: BufferData) -> Result<Buff
     }
 }
 
-// TODO(pcwalton): Support more image formats than R8.
-fn create_texture(_: &Device, _: Protection, size: &Size2D<u32>) -> Result<Texture, Error> {
+fn create_texture(_: &Device, format: Format, _: Protection, size: &Size2D<u32>)
+                  -> Result<Texture, Error> {
     unsafe {
         let mut texture = 0;
         gl::GenTextures(1, &mut texture);
         gl::BindTexture(gl::TEXTURE_2D, texture);
-        gl::TexStorage2D(gl::TEXTURE_2D, 0, gl::R8, size.width as i32, size.height as i32);
+
+        let gl_format = format.gl_internal_format();
+        gl::TexStorage2D(gl::TEXTURE_2D, 0, gl_format, size.width as i32, size.height as i32);
 
         Ok(Texture {
             data: [texture as usize, 0],

@@ -29,10 +29,18 @@ fn bind_to(this: &Texture, external_texture: &ExternalTexture) -> Result<(), Err
     unsafe {
         match *external_texture {
             ExternalTexture::Gl(texture) => {
+                let mut format = 0;
+                gl::ActiveTexture(gl::TEXTURE0);
+                gl::BindTexture(gl::TEXTURE_RECTANGLE, this.data[0] as GLuint);
+                gl::GetTexLevelParameteriv(gl::TEXTURE_RECTANGLE,
+                                           0,
+                                           gl::TEXTURE_INTERNAL_FORMAT,
+                                           &mut format);
+
                 gl::TextureView(texture,
                                 gl::TEXTURE_2D,
                                 this.data[0] as GLuint,
-                                gl::R8,
+                                format as GLuint,
                                 0,
                                 1,
                                 0,

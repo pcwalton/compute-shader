@@ -11,7 +11,7 @@ extern crate rand;
 use compute_shader::buffer::{BufferData, Protection};
 use compute_shader::instance::{Instance, ShadingLanguage};
 use compute_shader::queue::Uniform;
-use compute_shader::texture::ExternalTexture;
+use compute_shader::texture::{ExternalTexture, Format};
 use euclid::Size2D;
 use gl::types::GLint;
 use glfw::{Action, Context, Key, OpenGlProfileHint, WindowEvent, WindowHint, WindowMode};
@@ -56,7 +56,9 @@ pub fn main() {
 
     let buffer_data = BufferData::Uninitialized(WIDTH as usize * HEIGHT as usize);
     let buffer = device.create_buffer(Protection::ReadWrite, buffer_data).unwrap();
-    let dest = device.create_texture(Protection::WriteOnly, &Size2D::new(WIDTH, HEIGHT)).unwrap();
+    let dest = device.create_texture(Format::R8,
+                                     Protection::WriteOnly,
+                                     &Size2D::new(WIDTH, HEIGHT)).unwrap();
     let seed: u32 = rand::thread_rng().next_u32();
 
     let mut texture = 0;
