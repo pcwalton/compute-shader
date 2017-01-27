@@ -21,6 +21,7 @@ pub struct Queue {
 
 pub struct QueueFunctions {
     pub destroy: unsafe extern "Rust" fn(this: &Queue),
+    pub flush: extern "Rust" fn(this: &Queue) -> Result<(), Error>,
     pub finish: extern "Rust" fn(this: &Queue) -> Result<(), Error>,
     pub submit_compute: extern "Rust" fn(this: &Queue,
                                          program: &Program,
@@ -57,6 +58,11 @@ impl Drop for Queue {
 }
 
 impl Queue {
+    #[inline]
+    pub fn flush(&self) -> Result<(), Error> {
+        (self.functions.flush)(self)
+    }
+
     #[inline]
     pub fn finish(&self) -> Result<(), Error> {
         (self.functions.finish)(self)

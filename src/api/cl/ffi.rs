@@ -120,6 +120,7 @@ extern "C" {
                                    arg3: size_t,
                                    arg4: *mut ::std::os::raw::c_void,
                                    arg5: *mut size_t) -> cl_int;
+    pub fn clFlush(arg1: cl_command_queue) -> cl_int;
     pub fn clFinish(arg1: cl_command_queue) -> cl_int;
     pub fn clEnqueueReadBuffer(arg1: cl_command_queue, arg2: cl_mem,
                                arg3: cl_bool, arg4: size_t, arg5: size_t,

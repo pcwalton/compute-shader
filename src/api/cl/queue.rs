@@ -23,6 +23,7 @@ use texture::{Color, Texture};
 
 pub static QUEUE_FUNCTIONS: QueueFunctions = QueueFunctions {
     destroy: destroy,
+    flush: flush,
     finish: finish,
     submit_compute: submit_compute,
     submit_clear: submit_clear,
@@ -31,6 +32,16 @@ pub static QUEUE_FUNCTIONS: QueueFunctions = QueueFunctions {
 
 unsafe fn destroy(this: &Queue) {
     ffi::clReleaseCommandQueue(this.data as cl_command_queue);
+}
+
+fn flush(this: &Queue) -> Result<(), Error> {
+    unsafe {
+        if ffi::clFlush(this.data as cl_command_queue) == CL_SUCCESS {
+            Ok(())
+        } else {
+            Err(Error::Failed)
+        }
+    }
 }
 
 fn finish(this: &Queue) -> Result<(), Error> {

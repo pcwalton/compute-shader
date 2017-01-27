@@ -21,6 +21,7 @@ use texture::{Color, Texture};
 
 pub static QUEUE_FUNCTIONS: QueueFunctions = QueueFunctions {
     destroy: destroy,
+    flush: flush,
     finish: finish,
     submit_compute: submit_compute,
     submit_clear: submit_clear,
@@ -28,6 +29,13 @@ pub static QUEUE_FUNCTIONS: QueueFunctions = QueueFunctions {
 };
 
 unsafe fn destroy(_: &Queue) {}
+
+fn flush(_: &Queue) -> Result<(), Error> {
+    unsafe {
+        gl::Flush();
+        Ok(())
+    }
+}
 
 fn finish(_: &Queue) -> Result<(), Error> {
     unsafe {
