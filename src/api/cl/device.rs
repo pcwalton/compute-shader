@@ -12,7 +12,7 @@ use api::cl::buffer::BUFFER_FUNCTIONS;
 use api::cl::ffi::{self, CL_CONTEXT_DEVICES, CL_FLOAT, CL_MEM_COPY_HOST_PTR, CL_MEM_READ_ONLY};
 use api::cl::ffi::{CL_MEM_READ_WRITE, CL_MEM_WRITE_ONLY, CL_PROGRAM_BUILD_LOG};
 use api::cl::ffi::{CL_QUEUE_PROFILING_ENABLE, CL_R, CL_SUCCESS, CL_UNSIGNED_INT8, cl_context};
-use api::cl::ffi::{cl_device_id, cl_image_format, cl_mem_flags};
+use api::cl::ffi::{cl_device_id, cl_image_format, cl_mem_flags, cl_program};
 use api::cl::program::PROGRAM_FUNCTIONS;
 use api::cl::queue::QUEUE_FUNCTIONS;
 use api::cl::texture::TEXTURE_FUNCTIONS;
@@ -119,8 +119,13 @@ fn create_program(this: &Device, source: &str) -> Result<Program, Error> {
             return Err(Error::CompileFailed(String::from_utf8(build_log).unwrap_or("".to_owned())))
         }
 
+        let mut kernel = ptr::null_mut();
+        if ffi::clCreateKernelsInProgram(program, 1, &mut kernel, ptr::null_mut()) != CL_SUCCESS {
+            return Err(Error::Failed)
+        }
+
         Ok(Program {
-            data: program as usize,
+            data: kernel as usize,
             functions: &PROGRAM_FUNCTIONS,
         })
     }

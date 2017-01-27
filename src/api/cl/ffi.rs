@@ -36,6 +36,7 @@ pub type cl_command_queue_properties = cl_bitfield;
 pub type cl_context_properties = intptr_t;
 pub type cl_context_info = cl_uint;
 pub type cl_program_build_info = cl_uint;
+pub type cl_kernel_info = cl_uint;
 pub type cl_channel_order = cl_uint;
 pub type cl_channel_type = cl_uint;
 pub type cl_mem_flags = cl_bitfield;
@@ -114,6 +115,12 @@ extern "C" {
     pub fn clReleaseKernel(arg1: cl_kernel) -> cl_int;
     pub fn clSetKernelArg(arg1: cl_kernel, arg2: cl_uint, arg3: size_t,
                           arg4: *const ::std::os::raw::c_void) -> cl_int;
+    pub fn clGetKernelInfo(kernel: cl_kernel,
+                           param_name: cl_kernel_info,
+                           param_value_size: size_t,
+                           param_value: *mut ::std::os::raw::c_void,
+                           param_value_size_ret: *mut size_t)
+                           -> cl_int;
     pub fn clWaitForEvents(arg1: cl_uint, arg2: *const cl_event) -> cl_int;
     pub fn clReleaseEvent(arg1: cl_event) -> cl_int;
     pub fn clGetEventProfilingInfo(arg1: cl_event, arg2: cl_profiling_info,
@@ -175,4 +182,6 @@ pub const CL_IMAGE_HEIGHT: cl_image_info = 0x1115;
 pub const CL_IMAGE_DEPTH: cl_image_info = 0x1116;
 
 pub const CL_PROGRAM_BUILD_LOG: cl_program_build_info = 0x1183;
+
+pub const CL_KERNEL_PROGRAM: cl_kernel_info = 0x1194;
 

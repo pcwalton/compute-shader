@@ -9,7 +9,7 @@
 // except according to those terms.
 
 use api::cl::ffi::{self, CL_IMAGE_DEPTH, CL_IMAGE_HEIGHT, CL_IMAGE_WIDTH, CL_SUCCESS, CL_TRUE};
-use api::cl::ffi::{cl_command_queue, cl_event, cl_mem, cl_program};
+use api::cl::ffi::{cl_command_queue, cl_event, cl_kernel, cl_mem};
 use api::cl::event::EVENT_FUNCTIONS;
 use buffer::Buffer;
 use error::Error;
@@ -61,14 +61,6 @@ fn submit_compute(this: &Queue,
                   events: &[Event])
                   -> Result<Event, Error> {
     unsafe {
-        let mut kernel = ptr::null_mut();
-        if ffi::clCreateKernelsInProgram(program.data as cl_program,
-                                         1,
-                                         &mut kernel,
-                                         ptr::null_mut()) != CL_SUCCESS {
-            return Err(Error::Failed)
-        }
-
         for &(uniform_index, ref uniform) in uniforms {
             let (arg_size, arg_value);
             match *uniform {
@@ -90,7 +82,10 @@ fn submit_compute(this: &Queue,
                 }
             }
 
-            if ffi::clSetKernelArg(kernel, uniform_index, arg_size, arg_value) != CL_SUCCESS {
+            if ffi::clSetKernelArg(program.data as cl_kernel,
+                                   uniform_index,
+                                   arg_size,
+                                   arg_value) != CL_SUCCESS {
                 return Err(Error::Failed)
             }
         }
@@ -110,7 +105,7 @@ fn submit_compute(this: &Queue,
         let mut event = ptr::null_mut();
 
         if ffi::clEnqueueNDRangeKernel(this.data as cl_command_queue,
-                                       kernel,
+                                       program.data as cl_kernel,
                                        num_groups.len() as u32,
                                        ptr::null(),
                                        global_work_size.as_mut_ptr(),
@@ -120,8 +115,6 @@ fn submit_compute(this: &Queue,
                                        &mut event) != CL_SUCCESS {
             return Err(Error::Failed)
         }
-
-        ffi::clReleaseKernel(kernel);
 
         Ok(Event {
             data: event as usize,
