@@ -8,15 +8,17 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use api::gl::event::EVENT_FUNCTIONS;
+use api::gl::profile_event::PROFILE_EVENT_FUNCTIONS;
+use api::gl::sync_event::SYNC_EVENT_FUNCTIONS;
 use buffer::Buffer;
 use error::Error;
-use event::Event;
 use gl::types::{GLint, GLuint};
 use gl;
+use profile_event::ProfileEvent;
 use program::Program;
 use queue::{Queue, QueueFunctions, Uniform};
 use std::os::raw::c_void;
+use sync_event::SyncEvent;
 use texture::{Color, Texture};
 
 pub static QUEUE_FUNCTIONS: QueueFunctions = QueueFunctions {
@@ -26,6 +28,7 @@ pub static QUEUE_FUNCTIONS: QueueFunctions = QueueFunctions {
     submit_compute: submit_compute,
     submit_clear: submit_clear,
     submit_read_buffer: submit_read_buffer,
+    submit_sync_event: submit_sync_event,
 };
 
 unsafe fn destroy(_: &Queue) {}
@@ -48,8 +51,8 @@ fn submit_compute(_: &Queue,
                   program: &Program,
                   num_groups: &[u32],
                   uniforms: &[(u32, Uniform)],
-                  _: &[Event])
-                  -> Result<Event, Error> {
+                  _: &[SyncEvent])
+                  -> Result<ProfileEvent, Error> {
     unsafe {
         gl::UseProgram(program.data as GLuint);
 
@@ -86,47 +89,77 @@ fn submit_compute(_: &Queue,
             }
         }
 
+        let mut query = 0;
+        gl::GenQueries(1, &mut query);
+        gl::BeginQuery(gl::TIME_ELAPSED, query);
+
         gl::DispatchCompute(*num_groups.get(0).unwrap_or(&1),
                             *num_groups.get(1).unwrap_or(&1),
                             *num_groups.get(2).unwrap_or(&1));
 
-        Ok(Event {
-            data: 0,
-            functions: &EVENT_FUNCTIONS,
+        gl::EndQuery(gl::TIME_ELAPSED);
+
+        Ok(ProfileEvent {
+            data: query as usize,
+            functions: &PROFILE_EVENT_FUNCTIONS,
         })
     }
 }
 
-fn submit_clear(_: &Queue, texture: &Texture, color: &Color, _: &[Event]) -> Result<Event, Error> {
+fn submit_clear(_: &Queue, texture: &Texture, color: &Color, _: &[SyncEvent])
+                -> Result<ProfileEvent, Error> {
     unsafe {
         let color = match *color {
             Color::UInt(r, _, _, _) => r as u8,
         };
+
+        let mut query = 0;
+        gl::GenQueries(1, &mut query);
+        gl::BeginQuery(gl::TIME_ELAPSED, query);
+
         gl::ClearTexImage(texture.data[0] as GLuint,
                           0,
                           gl::RED,
                           gl::UNSIGNED_BYTE,
                           &color as *const u8 as *const c_void);
 
-        Ok(Event {
-            data: 0,
-            functions: &EVENT_FUNCTIONS,
+        gl::EndQuery(gl::TIME_ELAPSED);
+
+        Ok(ProfileEvent {
+            data: query as usize,
+            functions: &PROFILE_EVENT_FUNCTIONS,
         })
     }
 }
 
-fn submit_read_buffer(_: &Queue, dest: &mut [u8], buffer: &Buffer, start: usize, _: &[Event])
-                      -> Result<Event, Error> {
+fn submit_read_buffer(_: &Queue, dest: &mut [u8], buffer: &Buffer, start: usize, _: &[SyncEvent])
+                      -> Result<ProfileEvent, Error> {
     unsafe {
+        let mut query = 0;
+        gl::GenQueries(1, &mut query);
+        gl::BeginQuery(gl::TIME_ELAPSED, query);
+
         gl::BindBuffer(gl::COPY_READ_BUFFER, buffer.data as GLuint);
         gl::GetBufferSubData(gl::COPY_READ_BUFFER,
                              start as isize,
                              dest.len() as isize,
                              dest.as_mut_ptr() as *mut c_void);
 
-        Ok(Event {
-            data: 0,
-            functions: &EVENT_FUNCTIONS,
+        gl::EndQuery(gl::TIME_ELAPSED);
+
+        Ok(ProfileEvent {
+            data: query as usize,
+            functions: &PROFILE_EVENT_FUNCTIONS,
+        })
+    }
+}
+
+fn submit_sync_event(_: &Queue) -> Result<SyncEvent, Error> {
+    unsafe {
+        let fence = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
+        Ok(SyncEvent {
+            data: fence as usize,
+            functions: &SYNC_EVENT_FUNCTIONS,
         })
     }
 }

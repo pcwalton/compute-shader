@@ -10,10 +10,11 @@
 
 pub mod buffer;
 pub mod device;
-pub mod event;
 pub mod instance;
+pub mod profile_event;
 pub mod program;
 pub mod queue;
+pub mod sync_event;
 pub mod texture;
 
 mod ffi;

@@ -10,8 +10,9 @@
 
 use buffer::Buffer;
 use error::Error;
-use event::Event;
+use profile_event::ProfileEvent;
 use program::Program;
+use sync_event::SyncEvent;
 use texture::{Color, Texture};
 
 pub struct Queue {
@@ -27,19 +28,20 @@ pub struct QueueFunctions {
                                          program: &Program,
                                          num_groups: &[u32],
                                          uniforms: &[(u32, Uniform)],
-                                         events: &[Event])
-                                         -> Result<Event, Error>,
+                                         events: &[SyncEvent])
+                                         -> Result<ProfileEvent, Error>,
     pub submit_clear: extern "Rust" fn(this: &Queue,
                                        texture: &Texture,
                                        color: &Color,
-                                       events: &[Event])
-                                       -> Result<Event, Error>,
+                                       events: &[SyncEvent])
+                                       -> Result<ProfileEvent, Error>,
     pub submit_read_buffer: extern "Rust" fn(this: &Queue,
                                              dest: &mut [u8],
                                              buffer: &Buffer,
                                              start: usize,
-                                             events: &[Event])
-                                             -> Result<Event, Error>,
+                                             events: &[SyncEvent])
+                                             -> Result<ProfileEvent, Error>,
+    pub submit_sync_event: extern "Rust" fn(this: &Queue) -> Result<SyncEvent, Error>,
 }
 
 pub enum Uniform<'a> {
@@ -73,14 +75,14 @@ impl Queue {
                           program: &Program,
                           num_groups: &[u32],
                           uniforms: &[(u32, Uniform)],
-                          events: &[Event])
-                          -> Result<Event, Error> {
+                          events: &[SyncEvent])
+                          -> Result<ProfileEvent, Error> {
         (self.functions.submit_compute)(self, program, num_groups, uniforms, events)
     }
 
     #[inline]
-    pub fn submit_clear(&self, texture: &Texture, color: &Color, events: &[Event])
-                        -> Result<Event, Error> {
+    pub fn submit_clear(&self, texture: &Texture, color: &Color, events: &[SyncEvent])
+                        -> Result<ProfileEvent, Error> {
         (self.functions.submit_clear)(self, texture, color, events)
     }
 
@@ -89,9 +91,14 @@ impl Queue {
                               dest: &mut [u8],
                               buffer: &Buffer,
                               start: usize,
-                              events: &[Event])
-                              -> Result<Event, Error> {
+                              events: &[SyncEvent])
+                              -> Result<ProfileEvent, Error> {
         (self.functions.submit_read_buffer)(self, dest, buffer, start, events)
+    }
+
+    #[inline]
+    pub fn submit_sync_event(&self) -> Result<SyncEvent, Error> {
+        (self.functions.submit_sync_event)(self)
     }
 }
 

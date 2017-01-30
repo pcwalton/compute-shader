@@ -71,10 +71,12 @@ pub fn main() {
         (1, Uniform::Buffer(&input)),
         (2, Uniform::U32(matrix_length as u32)),
     ];
-    let event = queue.submit_compute(&program, &groups, &uniforms, &[]).unwrap();
+    queue.submit_compute(&program, &groups, &uniforms, &[]).unwrap();
+    let event = queue.submit_sync_event().unwrap();
 
     let mut result_bytes = vec![0; matrix_length * matrix_length * mem::size_of::<f32>()];
-    queue.submit_read_buffer(&mut result_bytes, &output, 0, &[event]).unwrap().wait().unwrap();
+    queue.submit_read_buffer(&mut result_bytes, &output, 0, &[event]).unwrap();
+    queue.submit_sync_event().unwrap().wait().unwrap();
 
     let mut result = Vec::with_capacity(matrix_length * matrix_length);
     let mut result_cursor = Cursor::new(result_bytes);

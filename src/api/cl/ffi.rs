@@ -144,6 +144,7 @@ extern "C" {
                                   arg5: *const size_t, arg6: *const size_t,
                                   arg7: cl_uint, arg8: *const cl_event,
                                   arg9: *mut cl_event) -> cl_int;
+    pub fn clEnqueueMarker(arg1: cl_command_queue, arg2: *mut cl_event) -> cl_int;
 
     #[cfg(target_os = "macos")]
     pub fn clCreateImageFromIOSurface2DAPPLE(context: cl_context,
@@ -162,7 +163,7 @@ pub const CL_TRUE: cl_bool = 1;
 
 pub const CL_DEVICE_TYPE_GPU: cl_device_type = 1 << 2;
 
-pub const CL_QUEUE_PROFILING_ENABLE: cl_command_queue_properties = 1 << 2;
+pub const CL_QUEUE_PROFILING_ENABLE: cl_command_queue_properties = 1 << 1;
 
 pub const CL_CONTEXT_DEVICES: cl_context_info = 0x1081;
 
@@ -184,4 +185,7 @@ pub const CL_IMAGE_DEPTH: cl_image_info = 0x1116;
 pub const CL_PROGRAM_BUILD_LOG: cl_program_build_info = 0x1183;
 
 pub const CL_KERNEL_PROGRAM: cl_kernel_info = 0x1194;
+
+pub const CL_PROFILING_COMMAND_START: cl_profiling_info = 0x1282;
+pub const CL_PROFILING_COMMAND_END: cl_profiling_info = 0x1283;
 

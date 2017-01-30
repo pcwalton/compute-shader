@@ -10,15 +10,17 @@
 
 use api::cl::ffi::{self, CL_IMAGE_DEPTH, CL_IMAGE_HEIGHT, CL_IMAGE_WIDTH, CL_SUCCESS, CL_TRUE};
 use api::cl::ffi::{cl_command_queue, cl_event, cl_kernel, cl_mem};
-use api::cl::event::EVENT_FUNCTIONS;
+use api::cl::profile_event::PROFILE_EVENT_FUNCTIONS;
+use api::cl::sync_event::SYNC_EVENT_FUNCTIONS;
 use buffer::Buffer;
 use error::Error;
-use event::Event;
+use profile_event::ProfileEvent;
 use program::Program;
 use queue::{Queue, QueueFunctions, Uniform};
 use std::mem;
 use std::os::raw::c_void;
 use std::ptr;
+use sync_event::SyncEvent;
 use texture::{Color, Texture};
 
 pub static QUEUE_FUNCTIONS: QueueFunctions = QueueFunctions {
@@ -28,6 +30,7 @@ pub static QUEUE_FUNCTIONS: QueueFunctions = QueueFunctions {
     submit_compute: submit_compute,
     submit_clear: submit_clear,
     submit_read_buffer: submit_read_buffer,
+    submit_sync_event: submit_sync_event,
 };
 
 unsafe fn destroy(this: &Queue) {
@@ -58,8 +61,8 @@ fn submit_compute(this: &Queue,
                   program: &Program,
                   num_groups: &[u32],
                   uniforms: &[(u32, Uniform)],
-                  events: &[Event])
-                  -> Result<Event, Error> {
+                  events: &[SyncEvent])
+                  -> Result<ProfileEvent, Error> {
     unsafe {
         for &(uniform_index, ref uniform) in uniforms {
             let (arg_size, arg_value);
@@ -116,15 +119,15 @@ fn submit_compute(this: &Queue,
             return Err(Error::Failed)
         }
 
-        Ok(Event {
+        Ok(ProfileEvent {
             data: event as usize,
-            functions: &EVENT_FUNCTIONS,
+            functions: &PROFILE_EVENT_FUNCTIONS,
         })
     }
 }
 
-fn submit_clear(this: &Queue, texture: &Texture, color: &Color, events: &[Event])
-                -> Result<Event, Error> {
+fn submit_clear(this: &Queue, texture: &Texture, color: &Color, events: &[SyncEvent])
+                -> Result<ProfileEvent, Error> {
     unsafe {
         let colors = match *color {
             Color::UInt(r, g, b, a) => [r, g, b, a],
@@ -171,9 +174,9 @@ fn submit_clear(this: &Queue, texture: &Texture, color: &Color, events: &[Event]
                                    event_wait_list.len() as u32,
                                    event_wait_list_ptr,
                                    &mut event) == CL_SUCCESS {
-            Ok(Event {
+            Ok(ProfileEvent {
                 data: event as usize,
-                functions: &EVENT_FUNCTIONS,
+                functions: &PROFILE_EVENT_FUNCTIONS,
             })
         } else {
             Err(Error::Failed)
@@ -185,8 +188,8 @@ fn submit_read_buffer(this: &Queue,
                       dest: &mut [u8],
                       buffer: &Buffer,
                       start: usize,
-                      events: &[Event])
-                      -> Result<Event, Error> {
+                      events: &[SyncEvent])
+                      -> Result<ProfileEvent, Error> {
     unsafe {
         let event_wait_list: Vec<_> = events.iter().map(|event| event.data as cl_event).collect();
         let event_wait_list_ptr = if event_wait_list.is_empty() {
@@ -206,9 +209,23 @@ fn submit_read_buffer(this: &Queue,
                                     event_wait_list.len() as u32,
                                     event_wait_list_ptr,
                                     &mut event) == CL_SUCCESS {
-            Ok(Event {
+            Ok(ProfileEvent {
                 data: event as usize,
-                functions: &EVENT_FUNCTIONS,
+                functions: &PROFILE_EVENT_FUNCTIONS,
+            })
+        } else {
+            Err(Error::Failed)
+        }
+    }
+}
+
+fn submit_sync_event(this: &Queue) -> Result<SyncEvent, Error> {
+    unsafe {
+        let mut event = ptr::null_mut();
+        if ffi::clEnqueueMarker(this.data as cl_command_queue, &mut event) == CL_SUCCESS {
+            Ok(SyncEvent {
+                data: event as usize,
+                functions: &SYNC_EVENT_FUNCTIONS,
             })
         } else {
             Err(Error::Failed)

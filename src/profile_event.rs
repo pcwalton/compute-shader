@@ -10,17 +10,17 @@
 
 use error::Error;
 
-pub struct Event {
+pub struct ProfileEvent {
     pub data: usize,
-    pub functions: &'static EventFunctions,
+    pub functions: &'static ProfileEventFunctions,
 }
 
-pub struct EventFunctions {
-    pub destroy: unsafe extern "Rust" fn(this: &Event),
-    pub wait: extern "Rust" fn(this: &Event) -> Result<(), Error>,
+pub struct ProfileEventFunctions {
+    pub destroy: unsafe extern "Rust" fn(this: &ProfileEvent),
+    pub time_elapsed: extern "Rust" fn(this: &ProfileEvent) -> Result<u64, Error>,
 }
 
-impl Drop for Event {
+impl Drop for ProfileEvent {
     fn drop(&mut self) {
         unsafe {
             (self.functions.destroy)(self)
@@ -28,10 +28,10 @@ impl Drop for Event {
     }
 }
 
-impl Event {
+impl ProfileEvent {
     #[inline]
-    pub fn wait(&self) -> Result<(), Error> {
-        (self.functions.wait)(self)
+    pub fn time_elapsed(&self) -> Result<u64, Error> {
+        (self.functions.time_elapsed)(self)
     }
 }
 

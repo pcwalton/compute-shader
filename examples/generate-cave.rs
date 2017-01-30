@@ -81,7 +81,8 @@ pub fn main() {
         (3, Uniform::U32(ITERATIONS)),
     ];
     let queue = device.create_queue().unwrap();
-    queue.submit_compute(&program, &groups, &uniforms, &[]).unwrap().wait().unwrap();
+    queue.submit_compute(&program, &groups, &uniforms, &[]).unwrap();
+    queue.submit_sync_event().unwrap().wait().unwrap();
 
     unsafe {
         gl::ClearColor(1.0, 1.0, 1.0, 1.0);

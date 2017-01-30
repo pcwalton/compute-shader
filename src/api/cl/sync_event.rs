@@ -10,18 +10,18 @@
 
 use api::cl::ffi::{self, CL_SUCCESS, cl_event};
 use error::Error;
-use event::{Event, EventFunctions};
+use sync_event::{SyncEvent, SyncEventFunctions};
 
-pub static EVENT_FUNCTIONS: EventFunctions = EventFunctions {
+pub static SYNC_EVENT_FUNCTIONS: SyncEventFunctions = SyncEventFunctions {
     destroy: destroy,
     wait: wait,
 };
 
-unsafe fn destroy(this: &Event) {
+unsafe fn destroy(this: &SyncEvent) {
     ffi::clReleaseEvent(this.data as cl_event);
 }
 
-fn wait(this: &Event) -> Result<(), Error> {
+fn wait(this: &SyncEvent) -> Result<(), Error> {
     unsafe {
         let event = this.data as cl_event;
         if ffi::clWaitForEvents(1, &event) == CL_SUCCESS {

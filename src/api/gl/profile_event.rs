@@ -9,21 +9,25 @@
 // except according to those terms.
 
 use error::Error;
-use event::{Event, EventFunctions};
+use gl::types::GLuint;
 use gl;
+use profile_event::{ProfileEvent, ProfileEventFunctions};
 
-// TODO(pcwalton): Use sync objects?
-pub static EVENT_FUNCTIONS: EventFunctions = EventFunctions {
+pub static PROFILE_EVENT_FUNCTIONS: ProfileEventFunctions = ProfileEventFunctions {
     destroy: destroy,
-    wait: wait,
+    time_elapsed: time_elapsed,
 };
 
-unsafe fn destroy(_: &Event) {}
+unsafe fn destroy(event: &ProfileEvent) {
+    let mut data = event.data as GLuint;
+    gl::DeleteQueries(1, &mut data);
+}
 
-fn wait(_: &Event) -> Result<(), Error> {
+fn time_elapsed(event: &ProfileEvent) -> Result<u64, Error> {
     unsafe {
-        gl::Finish();
-        Ok(())
+        let mut result = 0;
+        gl::GetQueryObjectui64v(event.data as GLuint, gl::QUERY_RESULT, &mut result);
+        Ok(result)
     }
 }
 
