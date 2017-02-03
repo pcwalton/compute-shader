@@ -65,30 +65,35 @@ fn submit_compute(this: &Queue,
                   -> Result<ProfileEvent, Error> {
     unsafe {
         for &(uniform_index, ref uniform) in uniforms {
-            let (arg_size, arg_value);
-            match *uniform {
+            let err = match *uniform {
                 Uniform::Buffer(buffer) => {
-                    arg_size = mem::size_of::<cl_mem>();
-                    arg_value = &buffer.data() as *const usize as *const c_void
+                    let data = buffer.data();
+                    ffi::clSetKernelArg(program.data() as cl_kernel,
+                                        uniform_index,
+                                        mem::size_of::<cl_mem>(),
+                                        &data as *const usize as *const c_void)
                 }
                 Uniform::Image(image) => {
-                    arg_size = mem::size_of::<cl_mem>();
-                    arg_value = &image.data()[0] as *const usize as *const c_void
+                    let data = image.data()[0];
+                    ffi::clSetKernelArg(program.data() as cl_kernel,
+                                        uniform_index,
+                                        mem::size_of::<cl_mem>(),
+                                        &data as *const usize as *const c_void)
                 }
                 Uniform::U32(ref value) => {
-                    arg_size = mem::size_of::<u32>();
-                    arg_value = value as *const u32 as *const c_void
+                    ffi::clSetKernelArg(program.data() as cl_kernel,
+                                        uniform_index,
+                                        mem::size_of::<u32>(),
+                                        value as *const u32 as *const c_void)
                 }
                 Uniform::UVec4(ref value) => {
-                    arg_size = mem::size_of::<[u32; 4]>();
-                    arg_value = &value[0] as *const u32 as *const c_void
+                    ffi::clSetKernelArg(program.data() as cl_kernel,
+                                        uniform_index,
+                                        mem::size_of::<[u32; 4]>(),
+                                        value as *const [u32; 4] as *const c_void)
                 }
-            }
-
-            if ffi::clSetKernelArg(program.data() as cl_kernel,
-                                   uniform_index,
-                                   arg_size,
-                                   arg_value) != CL_SUCCESS {
+            };
+            if err != CL_SUCCESS {
                 return Err(Error::Failed)
             }
         }
