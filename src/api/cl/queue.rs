@@ -14,6 +14,7 @@ use api::cl::profile_event::PROFILE_EVENT_FUNCTIONS;
 use api::cl::sync_event::SYNC_EVENT_FUNCTIONS;
 use buffer::Buffer;
 use error::Error;
+use image::{Color, Image};
 use profile_event::ProfileEvent;
 use program::Program;
 use queue::{Queue, QueueFunctions, Uniform};
@@ -21,7 +22,6 @@ use std::mem;
 use std::os::raw::c_void;
 use std::ptr;
 use sync_event::SyncEvent;
-use texture::{Color, Texture};
 
 pub static QUEUE_FUNCTIONS: QueueFunctions = QueueFunctions {
     destroy: destroy,
@@ -71,9 +71,9 @@ fn submit_compute(this: &Queue,
                     arg_size = mem::size_of::<cl_mem>();
                     arg_value = &buffer.data as *const usize as *const c_void
                 }
-                Uniform::Texture(texture) => {
+                Uniform::Image(image) => {
                     arg_size = mem::size_of::<cl_mem>();
-                    arg_value = &texture.data[0] as *const usize as *const c_void
+                    arg_value = &image.data[0] as *const usize as *const c_void
                 }
                 Uniform::U32(ref value) => {
                     arg_size = mem::size_of::<u32>();
@@ -126,7 +126,7 @@ fn submit_compute(this: &Queue,
     }
 }
 
-fn submit_clear(this: &Queue, texture: &Texture, color: &Color, events: &[SyncEvent])
+fn submit_clear(this: &Queue, image: &Image, color: &Color, events: &[SyncEvent])
                 -> Result<ProfileEvent, Error> {
     unsafe {
         let colors = match *color {
@@ -136,17 +136,17 @@ fn submit_clear(this: &Queue, texture: &Texture, color: &Color, events: &[SyncEv
         let origin = [0, 0, 0];
 
         let mut size = [0, 0, 0];
-        ffi::clGetImageInfo(texture.data[0] as cl_mem,
+        ffi::clGetImageInfo(image.data[0] as cl_mem,
                             CL_IMAGE_WIDTH,
                             mem::size_of::<usize>(),
                             &mut size[0] as *mut usize as *mut c_void,
                             ptr::null_mut());
-        ffi::clGetImageInfo(texture.data[0] as cl_mem,
+        ffi::clGetImageInfo(image.data[0] as cl_mem,
                             CL_IMAGE_HEIGHT,
                             mem::size_of::<usize>(),
                             &mut size[1] as *mut usize as *mut c_void,
                             ptr::null_mut());
-        ffi::clGetImageInfo(texture.data[0] as cl_mem,
+        ffi::clGetImageInfo(image.data[0] as cl_mem,
                             CL_IMAGE_DEPTH,
                             mem::size_of::<usize>(),
                             &mut size[2] as *mut usize as *mut c_void,
@@ -167,7 +167,7 @@ fn submit_clear(this: &Queue, texture: &Texture, color: &Color, events: &[SyncEv
         let mut event = ptr::null_mut();
 
         if ffi::clEnqueueFillImage(this.data as cl_command_queue,
-                                   texture.data[0] as cl_mem,
+                                   image.data[0] as cl_mem,
                                    colors.as_ptr() as *const c_void,
                                    origin.as_ptr(),
                                    size.as_mut_ptr(),

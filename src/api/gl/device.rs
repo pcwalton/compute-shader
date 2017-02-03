@@ -9,27 +9,27 @@
 // except according to those terms.
 
 use api::gl::buffer::BUFFER_FUNCTIONS;
+use api::gl::image::IMAGE_FUNCTIONS;
 use api::gl::program::PROGRAM_FUNCTIONS;
 use api::gl::queue::QUEUE_FUNCTIONS;
-use api::gl::texture::TEXTURE_FUNCTIONS;
 use buffer::{Buffer, BufferData, Protection};
 use device::{Device, DeviceFunctions};
 use error::Error;
 use euclid::Size2D;
 use gl::types::GLint;
 use gl;
+use image::{Format, Image};
 use program::Program;
 use queue::Queue;
 use std::os::raw::c_void;
 use std::ptr;
-use texture::{Format, Texture};
 
 pub static DEVICE_FUNCTIONS: DeviceFunctions = DeviceFunctions {
     destroy: destroy,
     create_queue: create_queue,
     create_program: create_program,
     create_buffer: create_buffer,
-    create_texture: create_texture,
+    create_image: create_image,
 };
 
 unsafe fn destroy(_: &Device) {}
@@ -113,8 +113,8 @@ fn create_buffer(_: &Device, _: Protection, mut data: BufferData) -> Result<Buff
     }
 }
 
-fn create_texture(_: &Device, format: Format, _: Protection, size: &Size2D<u32>)
-                  -> Result<Texture, Error> {
+fn create_image(_: &Device, format: Format, protection: Protection, size: &Size2D<u32>)
+                -> Result<Image, Error> {
     unsafe {
         let mut texture = 0;
         gl::GenTextures(1, &mut texture);
@@ -123,9 +123,9 @@ fn create_texture(_: &Device, format: Format, _: Protection, size: &Size2D<u32>)
         let gl_format = format.gl_internal_format();
         gl::TexStorage2D(gl::TEXTURE_2D, 0, gl_format, size.width as i32, size.height as i32);
 
-        Ok(Texture {
-            data: [texture as usize, 0],
-            functions: &TEXTURE_FUNCTIONS,
+        Ok(Image {
+            data: [texture as usize, protection as usize],
+            functions: &IMAGE_FUNCTIONS,
         })
     }
 }

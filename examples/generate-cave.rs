@@ -9,9 +9,9 @@ extern crate lord_drawquaad;
 extern crate rand;
 
 use compute_shader::buffer::{BufferData, Protection};
+use compute_shader::image::{ExternalImage, Format};
 use compute_shader::instance::{Instance, ShadingLanguage};
 use compute_shader::queue::Uniform;
-use compute_shader::texture::{ExternalTexture, Format};
 use euclid::Size2D;
 use gl::types::GLint;
 use glfw::{Action, Context, Key, OpenGlProfileHint, WindowEvent, WindowHint, WindowMode};
@@ -56,15 +56,14 @@ pub fn main() {
 
     let buffer_data = BufferData::Uninitialized(WIDTH as usize * HEIGHT as usize);
     let buffer = device.create_buffer(Protection::ReadWrite, buffer_data).unwrap();
-    let dest = device.create_texture(Format::R8,
-                                     Protection::WriteOnly,
-                                     &Size2D::new(WIDTH, HEIGHT)).unwrap();
+    let dest = device.create_image(Format::R8, Protection::WriteOnly, &Size2D::new(WIDTH, HEIGHT))
+                     .unwrap();
     let seed: u32 = rand::thread_rng().next_u32();
 
     let mut texture = 0;
     unsafe {
         gl::GenTextures(1, &mut texture);
-        dest.bind_to(&ExternalTexture::Gl(texture)).unwrap();
+        dest.bind_to(&ExternalImage::GlTexture(texture)).unwrap();
 
         gl::BindTexture(gl::TEXTURE_RECTANGLE, texture);
         gl::TexParameteri(gl::TEXTURE_RECTANGLE, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
@@ -75,7 +74,7 @@ pub fn main() {
 
     let groups = [WIDTH, HEIGHT];
     let uniforms = [
-        (0, Uniform::Texture(&dest)),
+        (0, Uniform::Image(&dest)),
         (1, Uniform::Buffer(&buffer)),
         (2, Uniform::U32(seed)),
         (3, Uniform::U32(ITERATIONS)),
@@ -137,7 +136,7 @@ static CL_SHADER: &'static str = r#"
         return neighbors;
     }
 
-    __kernel void generate_caves(__write_only image2d_t gTexture,
+    __kernel void generate_caves(__write_only image2d_t gImage,
                                  __global uchar *buffer,
                                  uint kSeed,
                                  uint kIterations) {
@@ -149,7 +148,7 @@ static CL_SHADER: &'static str = r#"
         state ^= state >> 16;
 
         // Initial state
-        int2 dimensions = get_image_dim(gTexture);
+        int2 dimensions = get_image_dim(gImage);
         int2 home = (int2)((int)get_global_id(0), (int)get_global_id(1));
         bool on = rand(state) < 0x73333333;
         buffer[offset(home, dimensions)] = value(on);
@@ -169,7 +168,7 @@ static CL_SHADER: &'static str = r#"
         }
 
         uint4 color = (uint4)((uint)value(on), (uint)value(on), (uint)value(on), (uint)value(on));
-        write_imageui(gTexture, home, color);
+        write_imageui(gImage, home, color);
     }
 "#;
 

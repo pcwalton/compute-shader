@@ -13,19 +13,19 @@ use api::cl::ffi::{self, CL_CONTEXT_DEVICES, CL_FLOAT, CL_MEM_COPY_HOST_PTR, CL_
 use api::cl::ffi::{CL_MEM_READ_WRITE, CL_MEM_WRITE_ONLY, CL_PROGRAM_BUILD_LOG};
 use api::cl::ffi::{CL_QUEUE_PROFILING_ENABLE, CL_R, CL_SUCCESS, CL_UNSIGNED_INT8, cl_context};
 use api::cl::ffi::{cl_device_id, cl_image_format, cl_mem_flags};
+use api::cl::image::IMAGE_FUNCTIONS;
 use api::cl::program::PROGRAM_FUNCTIONS;
 use api::cl::queue::QUEUE_FUNCTIONS;
-use api::cl::texture::TEXTURE_FUNCTIONS;
 use buffer::{Buffer, BufferData, Protection};
 use device::{Device, DeviceFunctions};
 use error::Error;
 use euclid::Size2D;
+use image::{Format, Image};
 use program::Program;
 use queue::Queue;
 use std::mem;
 use std::os::raw::c_void;
 use std::ptr;
-use texture::{Format, Texture};
 
 #[cfg(target_os = "macos")]
 use core_foundation::base::TCFType;
@@ -43,7 +43,7 @@ pub static DEVICE_FUNCTIONS: DeviceFunctions = DeviceFunctions {
     create_queue: create_queue,
     create_program: create_program,
     create_buffer: create_buffer,
-    create_texture: create_texture,
+    create_image: create_image,
 };
 
 unsafe fn destroy(this: &Device) {
@@ -166,8 +166,8 @@ fn create_buffer(this: &Device, protection: Protection, mut data: BufferData)
 }
 
 #[cfg(target_os = "macos")]
-fn create_texture(this: &Device, format: Format, protection: Protection, size: &Size2D<u32>)
-                  -> Result<Texture, Error> {
+fn create_image(this: &Device, format: Format, protection: Protection, size: &Size2D<u32>)
+                -> Result<Image, Error> {
     unsafe {
         let bytes_per_element = match format {
             Format::R8 => 1,
@@ -218,9 +218,9 @@ fn create_texture(this: &Device, format: Format, protection: Protection, size: &
         let surface_ref = surface.as_concrete_TypeRef();
         mem::forget(surface);
 
-        Ok(Texture {
+        Ok(Image {
             data: [image as usize, surface_ref as usize],
-            functions: &TEXTURE_FUNCTIONS,
+            functions: &IMAGE_FUNCTIONS,
         })
     }
 }

@@ -22,9 +22,9 @@ pub struct BufferFunctions {
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Protection {
-    ReadOnly,
-    WriteOnly,
-    ReadWrite,
+    ReadOnly = 0,
+    WriteOnly = 1,
+    ReadWrite = 2,
 }
 
 pub enum BufferData<'a> {

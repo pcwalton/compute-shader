@@ -11,24 +11,24 @@
 use error::Error;
 use gl::types::GLuint;
 use gl;
-use texture::{ExternalTexture, Texture, TextureFunctions};
+use image::{ExternalImage, Image, ImageFunctions};
 
-pub static TEXTURE_FUNCTIONS: TextureFunctions = TextureFunctions {
+pub static IMAGE_FUNCTIONS: ImageFunctions = ImageFunctions {
     destroy: destroy,
     bind_to: bind_to,
     width: width,
     height: height,
 };
 
-unsafe fn destroy(this: &Texture) {
+unsafe fn destroy(this: &Image) {
     let mut texture = this.data[0] as GLuint;
     gl::DeleteTextures(1, &mut texture);
 }
 
-fn bind_to(this: &Texture, external_texture: &ExternalTexture) -> Result<(), Error> {
+fn bind_to(this: &Image, external_texture: &ExternalImage) -> Result<(), Error> {
     unsafe {
         match *external_texture {
-            ExternalTexture::Gl(texture) => {
+            ExternalImage::GlTexture(texture) => {
                 let mut format = 0;
                 gl::ActiveTexture(gl::TEXTURE0);
                 gl::BindTexture(gl::TEXTURE_RECTANGLE, this.data[0] as GLuint);
@@ -51,7 +51,7 @@ fn bind_to(this: &Texture, external_texture: &ExternalTexture) -> Result<(), Err
     }
 }
 
-fn width(this: &Texture) -> Result<u32, Error> {
+fn width(this: &Image) -> Result<u32, Error> {
     unsafe {
         let mut width = 0;
         gl::ActiveTexture(gl::TEXTURE0);
@@ -61,7 +61,7 @@ fn width(this: &Texture) -> Result<u32, Error> {
     }
 }
 
-fn height(this: &Texture) -> Result<u32, Error> {
+fn height(this: &Image) -> Result<u32, Error> {
     unsafe {
         let mut height = 0;
         gl::ActiveTexture(gl::TEXTURE0);

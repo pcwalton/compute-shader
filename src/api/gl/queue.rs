@@ -10,16 +10,16 @@
 
 use api::gl::profile_event::PROFILE_EVENT_FUNCTIONS;
 use api::gl::sync_event::SYNC_EVENT_FUNCTIONS;
-use buffer::Buffer;
+use buffer::{Buffer, Protection};
 use error::Error;
 use gl::types::{GLint, GLuint};
 use gl;
+use image::{Color, Image};
 use profile_event::ProfileEvent;
 use program::Program;
 use queue::{Queue, QueueFunctions, Uniform};
 use std::os::raw::c_void;
 use sync_event::SyncEvent;
-use texture::{Color, Texture};
 
 pub static QUEUE_FUNCTIONS: QueueFunctions = QueueFunctions {
     destroy: destroy,
@@ -56,7 +56,7 @@ fn submit_compute(_: &Queue,
     unsafe {
         gl::UseProgram(program.data as GLuint);
 
-        let (mut next_ssbo_binding, mut next_texture_unit) = (0, 0);
+        let (mut next_ssbo_binding, mut next_image_unit) = (0, 0);
         for &(uniform_index, ref uniform) in uniforms {
             match *uniform {
                 Uniform::Buffer(buffer) => {
@@ -72,11 +72,31 @@ fn submit_compute(_: &Queue,
 
                     next_ssbo_binding += 1
                 }
-                Uniform::Texture(texture) => {
-                    gl::ActiveTexture(gl::TEXTURE0 + next_texture_unit);
-                    gl::BindTexture(gl::TEXTURE_2D, texture.data[0] as GLuint);
-                    gl::Uniform1i(uniform_index as GLint, next_texture_unit as GLint);
-                    next_texture_unit += 1
+                Uniform::Image(image) => {
+                    let access = match image.data[1] {
+                        p if p == Protection::ReadOnly as usize => gl::READ_ONLY,
+                        p if p == Protection::WriteOnly as usize => gl::WRITE_ONLY,
+                        _ => gl::READ_WRITE,
+                    };
+
+                    let mut internal_format = 0;
+                    gl::ActiveTexture(gl::TEXTURE0);
+                    gl::BindTexture(gl::TEXTURE_RECTANGLE, image.data[0] as GLuint);
+                    gl::GetTexLevelParameteriv(gl::TEXTURE_RECTANGLE,
+                                               0,
+                                               gl::TEXTURE_INTERNAL_FORMAT,
+                                               &mut internal_format);
+
+                    gl::BindImageTexture(next_image_unit,
+                                         image.data[0] as GLuint,
+                                         0,
+                                         gl::FALSE,
+                                         0,
+                                         access,
+                                         internal_format as GLuint);
+                                         
+                    gl::Uniform1i(uniform_index as GLint, next_image_unit as GLint);
+                    next_image_unit += 1
                 }
                 Uniform::U32(value) => gl::Uniform1ui(uniform_index as GLint, value),
                 Uniform::UVec4(values) => {
@@ -106,7 +126,7 @@ fn submit_compute(_: &Queue,
     }
 }
 
-fn submit_clear(_: &Queue, texture: &Texture, color: &Color, _: &[SyncEvent])
+fn submit_clear(_: &Queue, image: &Image, color: &Color, _: &[SyncEvent])
                 -> Result<ProfileEvent, Error> {
     unsafe {
         let color = match *color {
@@ -117,7 +137,7 @@ fn submit_clear(_: &Queue, texture: &Texture, color: &Color, _: &[SyncEvent])
         gl::GenQueries(1, &mut query);
         gl::BeginQuery(gl::TIME_ELAPSED, query);
 
-        gl::ClearTexImage(texture.data[0] as GLuint,
+        gl::ClearTexImage(image.data[0] as GLuint,
                           0,
                           gl::RED,
                           gl::UNSIGNED_BYTE,

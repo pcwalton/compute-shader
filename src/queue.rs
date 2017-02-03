@@ -10,10 +10,10 @@
 
 use buffer::Buffer;
 use error::Error;
+use image::{Color, Image};
 use profile_event::ProfileEvent;
 use program::Program;
 use sync_event::SyncEvent;
-use texture::{Color, Texture};
 
 pub struct Queue {
     pub data: usize,
@@ -31,7 +31,7 @@ pub struct QueueFunctions {
                                          events: &[SyncEvent])
                                          -> Result<ProfileEvent, Error>,
     pub submit_clear: extern "Rust" fn(this: &Queue,
-                                       texture: &Texture,
+                                       image: &Image,
                                        color: &Color,
                                        events: &[SyncEvent])
                                        -> Result<ProfileEvent, Error>,
@@ -46,7 +46,7 @@ pub struct QueueFunctions {
 
 pub enum Uniform<'a> {
     Buffer(&'a Buffer),
-    Texture(&'a Texture),
+    Image(&'a Image),
     U32(u32),
     UVec4([u32; 4]),
 }
@@ -81,9 +81,9 @@ impl Queue {
     }
 
     #[inline]
-    pub fn submit_clear(&self, texture: &Texture, color: &Color, events: &[SyncEvent])
+    pub fn submit_clear(&self, image: &Image, color: &Color, events: &[SyncEvent])
                         -> Result<ProfileEvent, Error> {
-        (self.functions.submit_clear)(self, texture, color, events)
+        (self.functions.submit_clear)(self, image, color, events)
     }
 
     #[inline]

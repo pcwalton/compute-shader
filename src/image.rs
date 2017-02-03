@@ -12,21 +12,20 @@ use error::Error;
 use gl::types::GLuint;
 use gl;
 
-pub struct Texture {
+pub struct Image {
     pub data: [usize; 2],
-    pub functions: &'static TextureFunctions,
+    pub functions: &'static ImageFunctions,
 }
 
-pub struct TextureFunctions {
-    pub destroy: unsafe extern "Rust" fn(this: &Texture),
-    pub bind_to: extern "Rust" fn(this: &Texture, external_texture: &ExternalTexture)
-                                  -> Result<(), Error>,
-    pub width: extern "Rust" fn(this: &Texture) -> Result<u32, Error>,
-    pub height: extern "Rust" fn(this: &Texture) -> Result<u32, Error>,
+pub struct ImageFunctions {
+    pub destroy: unsafe extern "Rust" fn(this: &Image),
+    pub bind_to: extern "Rust" fn(this: &Image, external_image: &ExternalImage) -> Result<(), Error>,
+    pub width: extern "Rust" fn(this: &Image) -> Result<u32, Error>,
+    pub height: extern "Rust" fn(this: &Image) -> Result<u32, Error>,
 }
 
-pub enum ExternalTexture {
-    Gl(u32),
+pub enum ExternalImage {
+    GlTexture(u32),
 }
 
 /// The format of a texture.
@@ -45,7 +44,7 @@ pub enum Color {
     UInt(u32, u32, u32, u32),
 }
 
-impl Drop for Texture {
+impl Drop for Image {
     fn drop(&mut self) {
         unsafe {
             (self.functions.destroy)(self)
@@ -53,10 +52,10 @@ impl Drop for Texture {
     }
 }
 
-impl Texture {
+impl Image {
     #[inline]
-    pub fn bind_to(&self, external_texture: &ExternalTexture) -> Result<(), Error> {
-        (self.functions.bind_to)(self, external_texture)
+    pub fn bind_to(&self, external_image: &ExternalImage) -> Result<(), Error> {
+        (self.functions.bind_to)(self, external_image)
     }
 
     #[inline]

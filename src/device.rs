@@ -11,9 +11,9 @@
 use buffer::{Buffer, BufferData, Protection};
 use error::Error;
 use euclid::Size2D;
+use image::{Format, Image};
 use program::Program;
 use queue::Queue;
-use texture::{Format, Texture};
 
 pub struct Device {
     pub data: usize,
@@ -26,11 +26,11 @@ pub struct DeviceFunctions {
     pub create_program: extern "Rust" fn(this: &Device, source: &str) -> Result<Program, Error>,
     pub create_buffer: extern "Rust" fn(this: &Device, protection: Protection, data: BufferData)
                                         -> Result<Buffer, Error>,
-    pub create_texture: extern "Rust" fn(this: &Device,
-                                         format: Format,
-                                         protection: Protection,
-                                         size: &Size2D<u32>)
-                                         -> Result<Texture, Error>,
+    pub create_image: extern "Rust" fn(this: &Device,
+                                       format: Format,
+                                       protection: Protection,
+                                       size: &Size2D<u32>)
+                                       -> Result<Image, Error>,
 }
 
 impl Drop for Device {
@@ -59,9 +59,9 @@ impl Device {
     }
 
     #[inline]
-    pub fn create_texture(&self, format: Format, protection: Protection, size: &Size2D<u32>)
-                          -> Result<Texture, Error> {
-        (self.functions.create_texture)(self, format, protection, size)
+    pub fn create_image(&self, format: Format, protection: Protection, size: &Size2D<u32>)
+                        -> Result<Image, Error> {
+        (self.functions.create_image)(self, format, protection, size)
     }
 }
 
