@@ -33,10 +33,10 @@ pub static IMAGE_FUNCTIONS: ImageFunctions = ImageFunctions {
 unsafe fn destroy(this: &Image) {
     // Release the `IOSurfaceRef` by wrapping it with no reference count change and letting that
     // wrapper drop.
-    let io_surface = mem::transmute::<usize, IOSurfaceRef>(this.data[1]);
+    let io_surface = mem::transmute::<usize, IOSurfaceRef>(this.data()[1]);
     IOSurface::wrap_under_create_rule(io_surface);
 
-    ffi::clReleaseMemObject(this.data[0] as cl_mem);
+    ffi::clReleaseMemObject(this.data()[0] as cl_mem);
 }
 
 #[cfg(target_os = "macos")]
@@ -50,7 +50,7 @@ fn bind_to(this: &Image, external_image: &ExternalImage) -> Result<(), Error> {
                     image_channel_order: 0,
                     image_channel_data_type: 0,
                 };
-                if ffi::clGetImageInfo(this.data[0] as cl_mem,
+                if ffi::clGetImageInfo(this.data()[0] as cl_mem,
                                        CL_IMAGE_FORMAT,
                                        mem::size_of::<cl_image_format>(),
                                        &mut image_format as *mut cl_image_format as *mut c_void,
@@ -69,7 +69,7 @@ fn bind_to(this: &Image, external_image: &ExternalImage) -> Result<(), Error> {
                 // bug.)
                 gl::ActiveTexture(gl::TEXTURE0);
                 gl::BindTexture(gl::TEXTURE_RECTANGLE, texture);
-                let io_surface = mem::transmute::<usize, IOSurfaceRef>(this.data[1]);
+                let io_surface = mem::transmute::<usize, IOSurfaceRef>(this.data()[1]);
                 let io_surface = IOSurface::wrap_under_get_rule(io_surface);
                 io_surface.bind_to_gl_texture(width as i32,
                                               height as i32,
@@ -85,7 +85,7 @@ fn bind_to(this: &Image, external_image: &ExternalImage) -> Result<(), Error> {
 fn width(this: &Image) -> Result<u32, Error> {
     unsafe {
         let mut width = 0usize;
-        if ffi::clGetImageInfo(this.data[0] as cl_mem,
+        if ffi::clGetImageInfo(this.data()[0] as cl_mem,
                                CL_IMAGE_WIDTH,
                                mem::size_of::<usize>(),
                                &mut width as *mut usize as *mut c_void,
@@ -100,7 +100,7 @@ fn width(this: &Image) -> Result<u32, Error> {
 fn height(this: &Image) -> Result<u32, Error> {
     unsafe {
         let mut height = 0usize;
-        if ffi::clGetImageInfo(this.data[0] as cl_mem,
+        if ffi::clGetImageInfo(this.data()[0] as cl_mem,
                                CL_IMAGE_HEIGHT,
                                mem::size_of::<usize>(),
                                &mut height as *mut usize as *mut c_void,

@@ -20,13 +20,13 @@ pub static PROGRAM_FUNCTIONS: ProgramFunctions = ProgramFunctions {
 
 unsafe fn destroy(this: &Program) {
     let mut program = ptr::null_mut();
-    ffi::clGetKernelInfo(this.data as cl_kernel,
+    ffi::clGetKernelInfo(this.data() as cl_kernel,
                          CL_KERNEL_PROGRAM,
                          mem::size_of::<cl_program>(),
                          &mut program as *mut cl_program as *mut c_void,
                          ptr::null_mut());
 
-    ffi::clReleaseKernel(this.data as cl_kernel);
+    ffi::clReleaseKernel(this.data() as cl_kernel);
     ffi::clReleaseProgram(program);
 }
 

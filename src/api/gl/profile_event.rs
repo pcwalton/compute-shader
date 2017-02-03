@@ -19,14 +19,14 @@ pub static PROFILE_EVENT_FUNCTIONS: ProfileEventFunctions = ProfileEventFunction
 };
 
 unsafe fn destroy(event: &ProfileEvent) {
-    let mut data = event.data as GLuint;
+    let mut data = event.data() as GLuint;
     gl::DeleteQueries(1, &mut data);
 }
 
 fn time_elapsed(event: &ProfileEvent) -> Result<u64, Error> {
     unsafe {
         let mut result = 0;
-        gl::GetQueryObjectui64v(event.data as GLuint, gl::QUERY_RESULT, &mut result);
+        gl::GetQueryObjectui64v(event.data() as GLuint, gl::QUERY_RESULT, &mut result);
         Ok(result)
     }
 }

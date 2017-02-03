@@ -8,6 +8,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! A cross-platform interface to a subset of GPU compute functionality.
+
 extern crate euclid;
 extern crate gl;
 
@@ -16,9 +18,10 @@ extern crate core_foundation;
 #[cfg(target_os = "macos")]
 extern crate io_surface;
 
-pub mod api {
+mod api {
     #[cfg(target_os = "macos")]
     pub mod cl;
+    #[cfg_attr(target_os = "macos", allow(dead_code))]
     pub mod gl;
 }
 

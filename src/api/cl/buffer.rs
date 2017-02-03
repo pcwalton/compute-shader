@@ -16,6 +16,6 @@ pub static BUFFER_FUNCTIONS: BufferFunctions = BufferFunctions {
 };
 
 unsafe fn destroy(this: &Buffer) {
-    ffi::clReleaseMemObject(this.data as cl_mem);
+    ffi::clReleaseMemObject(this.data() as cl_mem);
 }
 

@@ -21,7 +21,7 @@ pub static IMAGE_FUNCTIONS: ImageFunctions = ImageFunctions {
 };
 
 unsafe fn destroy(this: &Image) {
-    let mut texture = this.data[0] as GLuint;
+    let mut texture = this.data()[0] as GLuint;
     gl::DeleteTextures(1, &mut texture);
 }
 
@@ -31,7 +31,7 @@ fn bind_to(this: &Image, external_texture: &ExternalImage) -> Result<(), Error> 
             ExternalImage::GlTexture(texture) => {
                 let mut format = 0;
                 gl::ActiveTexture(gl::TEXTURE0);
-                gl::BindTexture(gl::TEXTURE_RECTANGLE, this.data[0] as GLuint);
+                gl::BindTexture(gl::TEXTURE_RECTANGLE, this.data()[0] as GLuint);
                 gl::GetTexLevelParameteriv(gl::TEXTURE_RECTANGLE,
                                            0,
                                            gl::TEXTURE_INTERNAL_FORMAT,
@@ -39,7 +39,7 @@ fn bind_to(this: &Image, external_texture: &ExternalImage) -> Result<(), Error> 
 
                 gl::TextureView(texture,
                                 gl::TEXTURE_2D,
-                                this.data[0] as GLuint,
+                                this.data()[0] as GLuint,
                                 format as GLuint,
                                 0,
                                 1,
@@ -55,7 +55,7 @@ fn width(this: &Image) -> Result<u32, Error> {
     unsafe {
         let mut width = 0;
         gl::ActiveTexture(gl::TEXTURE0);
-        gl::BindTexture(gl::TEXTURE_RECTANGLE, this.data[0] as GLuint);
+        gl::BindTexture(gl::TEXTURE_RECTANGLE, this.data()[0] as GLuint);
         gl::GetTexLevelParameteriv(gl::TEXTURE_RECTANGLE, 0, gl::TEXTURE_WIDTH, &mut width);
         Ok(width as u32)
     }
@@ -65,7 +65,7 @@ fn height(this: &Image) -> Result<u32, Error> {
     unsafe {
         let mut height = 0;
         gl::ActiveTexture(gl::TEXTURE0);
-        gl::BindTexture(gl::TEXTURE_RECTANGLE, this.data[0] as GLuint);
+        gl::BindTexture(gl::TEXTURE_RECTANGLE, this.data()[0] as GLuint);
         gl::GetTexLevelParameteriv(gl::TEXTURE_RECTANGLE, 0, gl::TEXTURE_HEIGHT, &mut height);
         Ok(height as u32)
     }

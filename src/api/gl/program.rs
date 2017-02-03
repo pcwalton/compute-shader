@@ -18,9 +18,9 @@ pub static PROGRAM_FUNCTIONS: ProgramFunctions = ProgramFunctions {
 
 unsafe fn destroy(this: &Program) {
     let mut shader = 0;
-    gl::GetAttachedShaders(this.data as GLuint, 1, &mut 0, &mut shader);
+    gl::GetAttachedShaders(this.data() as GLuint, 1, &mut 0, &mut shader);
     gl::UseProgram(0);
-    gl::DeleteProgram(this.data as GLuint);
+    gl::DeleteProgram(this.data() as GLuint);
     gl::DeleteShader(shader);
 }
 

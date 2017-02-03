@@ -54,26 +54,26 @@ fn submit_compute(_: &Queue,
                   _: &[SyncEvent])
                   -> Result<ProfileEvent, Error> {
     unsafe {
-        gl::UseProgram(program.data as GLuint);
+        gl::UseProgram(program.data() as GLuint);
 
         let (mut next_ssbo_binding, mut next_image_unit) = (0, 0);
         for &(uniform_index, ref uniform) in uniforms {
             match *uniform {
                 Uniform::Buffer(buffer) => {
                     let mut buffer_size = 0;
-                    gl::BindBuffer(gl::COPY_READ_BUFFER, buffer.data as u32);
+                    gl::BindBuffer(gl::COPY_READ_BUFFER, buffer.data() as u32);
                     gl::GetBufferParameteriv(gl::COPY_READ_BUFFER,
                                              gl::BUFFER_SIZE,
                                              &mut buffer_size);
 
                     gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER,
                                        next_ssbo_binding,
-                                       buffer.data as GLuint);
+                                       buffer.data() as GLuint);
 
                     next_ssbo_binding += 1
                 }
                 Uniform::Image(image) => {
-                    let access = match image.data[1] {
+                    let access = match image.data()[1] {
                         p if p == Protection::ReadOnly as usize => gl::READ_ONLY,
                         p if p == Protection::WriteOnly as usize => gl::WRITE_ONLY,
                         _ => gl::READ_WRITE,
@@ -81,14 +81,14 @@ fn submit_compute(_: &Queue,
 
                     let mut internal_format = 0;
                     gl::ActiveTexture(gl::TEXTURE0);
-                    gl::BindTexture(gl::TEXTURE_RECTANGLE, image.data[0] as GLuint);
+                    gl::BindTexture(gl::TEXTURE_RECTANGLE, image.data()[0] as GLuint);
                     gl::GetTexLevelParameteriv(gl::TEXTURE_RECTANGLE,
                                                0,
                                                gl::TEXTURE_INTERNAL_FORMAT,
                                                &mut internal_format);
 
                     gl::BindImageTexture(next_image_unit,
-                                         image.data[0] as GLuint,
+                                         image.data()[0] as GLuint,
                                          0,
                                          gl::FALSE,
                                          0,
@@ -119,10 +119,7 @@ fn submit_compute(_: &Queue,
 
         gl::EndQuery(gl::TIME_ELAPSED);
 
-        Ok(ProfileEvent {
-            data: query as usize,
-            functions: &PROFILE_EVENT_FUNCTIONS,
-        })
+        Ok(ProfileEvent::from_raw_data(query as usize, &PROFILE_EVENT_FUNCTIONS))
     }
 }
 
@@ -137,7 +134,7 @@ fn submit_clear(_: &Queue, image: &Image, color: &Color, _: &[SyncEvent])
         gl::GenQueries(1, &mut query);
         gl::BeginQuery(gl::TIME_ELAPSED, query);
 
-        gl::ClearTexImage(image.data[0] as GLuint,
+        gl::ClearTexImage(image.data()[0] as GLuint,
                           0,
                           gl::RED,
                           gl::UNSIGNED_BYTE,
@@ -145,10 +142,7 @@ fn submit_clear(_: &Queue, image: &Image, color: &Color, _: &[SyncEvent])
 
         gl::EndQuery(gl::TIME_ELAPSED);
 
-        Ok(ProfileEvent {
-            data: query as usize,
-            functions: &PROFILE_EVENT_FUNCTIONS,
-        })
+        Ok(ProfileEvent::from_raw_data(query as usize, &PROFILE_EVENT_FUNCTIONS))
     }
 }
 
@@ -159,7 +153,7 @@ fn submit_read_buffer(_: &Queue, dest: &mut [u8], buffer: &Buffer, start: usize,
         gl::GenQueries(1, &mut query);
         gl::BeginQuery(gl::TIME_ELAPSED, query);
 
-        gl::BindBuffer(gl::COPY_READ_BUFFER, buffer.data as GLuint);
+        gl::BindBuffer(gl::COPY_READ_BUFFER, buffer.data() as GLuint);
         gl::GetBufferSubData(gl::COPY_READ_BUFFER,
                              start as isize,
                              dest.len() as isize,
@@ -167,20 +161,14 @@ fn submit_read_buffer(_: &Queue, dest: &mut [u8], buffer: &Buffer, start: usize,
 
         gl::EndQuery(gl::TIME_ELAPSED);
 
-        Ok(ProfileEvent {
-            data: query as usize,
-            functions: &PROFILE_EVENT_FUNCTIONS,
-        })
+        Ok(ProfileEvent::from_raw_data(query as usize, &PROFILE_EVENT_FUNCTIONS))
     }
 }
 
 fn submit_sync_event(_: &Queue) -> Result<SyncEvent, Error> {
     unsafe {
         let fence = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
-        Ok(SyncEvent {
-            data: fence as usize,
-            functions: &SYNC_EVENT_FUNCTIONS,
-        })
+        Ok(SyncEvent::from_raw_data(fence as usize, &SYNC_EVENT_FUNCTIONS))
     }
 }
 

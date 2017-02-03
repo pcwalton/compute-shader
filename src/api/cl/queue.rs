@@ -34,12 +34,12 @@ pub static QUEUE_FUNCTIONS: QueueFunctions = QueueFunctions {
 };
 
 unsafe fn destroy(this: &Queue) {
-    ffi::clReleaseCommandQueue(this.data as cl_command_queue);
+    ffi::clReleaseCommandQueue(this.data() as cl_command_queue);
 }
 
 fn flush(this: &Queue) -> Result<(), Error> {
     unsafe {
-        if ffi::clFlush(this.data as cl_command_queue) == CL_SUCCESS {
+        if ffi::clFlush(this.data() as cl_command_queue) == CL_SUCCESS {
             Ok(())
         } else {
             Err(Error::Failed)
@@ -49,7 +49,7 @@ fn flush(this: &Queue) -> Result<(), Error> {
 
 fn finish(this: &Queue) -> Result<(), Error> {
     unsafe {
-        if ffi::clFinish(this.data as cl_command_queue) == CL_SUCCESS {
+        if ffi::clFinish(this.data() as cl_command_queue) == CL_SUCCESS {
             Ok(())
         } else {
             Err(Error::Failed)
@@ -69,11 +69,11 @@ fn submit_compute(this: &Queue,
             match *uniform {
                 Uniform::Buffer(buffer) => {
                     arg_size = mem::size_of::<cl_mem>();
-                    arg_value = &buffer.data as *const usize as *const c_void
+                    arg_value = &buffer.data() as *const usize as *const c_void
                 }
                 Uniform::Image(image) => {
                     arg_size = mem::size_of::<cl_mem>();
-                    arg_value = &image.data[0] as *const usize as *const c_void
+                    arg_value = &image.data()[0] as *const usize as *const c_void
                 }
                 Uniform::U32(ref value) => {
                     arg_size = mem::size_of::<u32>();
@@ -85,7 +85,7 @@ fn submit_compute(this: &Queue,
                 }
             }
 
-            if ffi::clSetKernelArg(program.data as cl_kernel,
+            if ffi::clSetKernelArg(program.data() as cl_kernel,
                                    uniform_index,
                                    arg_size,
                                    arg_value) != CL_SUCCESS {
@@ -98,7 +98,9 @@ fn submit_compute(this: &Queue,
             global_work_size[dimension] = group_size as usize
         }
 
-        let event_wait_list: Vec<_> = events.iter().map(|event| event.data as cl_event).collect();
+        let event_wait_list: Vec<_> = events.iter()
+                                            .map(|event| event.data() as cl_event)
+                                            .collect();
         let event_wait_list_ptr = if event_wait_list.is_empty() {
             ptr::null()
         } else {
@@ -107,8 +109,8 @@ fn submit_compute(this: &Queue,
 
         let mut event = ptr::null_mut();
 
-        if ffi::clEnqueueNDRangeKernel(this.data as cl_command_queue,
-                                       program.data as cl_kernel,
+        if ffi::clEnqueueNDRangeKernel(this.data() as cl_command_queue,
+                                       program.data() as cl_kernel,
                                        num_groups.len() as u32,
                                        ptr::null(),
                                        global_work_size.as_mut_ptr(),
@@ -119,10 +121,7 @@ fn submit_compute(this: &Queue,
             return Err(Error::Failed)
         }
 
-        Ok(ProfileEvent {
-            data: event as usize,
-            functions: &PROFILE_EVENT_FUNCTIONS,
-        })
+        Ok(ProfileEvent::from_raw_data(event as usize, &PROFILE_EVENT_FUNCTIONS))
     }
 }
 
@@ -136,17 +135,17 @@ fn submit_clear(this: &Queue, image: &Image, color: &Color, events: &[SyncEvent]
         let origin = [0, 0, 0];
 
         let mut size = [0, 0, 0];
-        ffi::clGetImageInfo(image.data[0] as cl_mem,
+        ffi::clGetImageInfo(image.data()[0] as cl_mem,
                             CL_IMAGE_WIDTH,
                             mem::size_of::<usize>(),
                             &mut size[0] as *mut usize as *mut c_void,
                             ptr::null_mut());
-        ffi::clGetImageInfo(image.data[0] as cl_mem,
+        ffi::clGetImageInfo(image.data()[0] as cl_mem,
                             CL_IMAGE_HEIGHT,
                             mem::size_of::<usize>(),
                             &mut size[1] as *mut usize as *mut c_void,
                             ptr::null_mut());
-        ffi::clGetImageInfo(image.data[0] as cl_mem,
+        ffi::clGetImageInfo(image.data()[0] as cl_mem,
                             CL_IMAGE_DEPTH,
                             mem::size_of::<usize>(),
                             &mut size[2] as *mut usize as *mut c_void,
@@ -157,7 +156,9 @@ fn submit_clear(this: &Queue, image: &Image, color: &Color, events: &[SyncEvent]
             }
         }
 
-        let event_wait_list: Vec<_> = events.iter().map(|event| event.data as cl_event).collect();
+        let event_wait_list: Vec<_> = events.iter()
+                                            .map(|event| event.data() as cl_event)
+                                            .collect();
         let event_wait_list_ptr = if event_wait_list.is_empty() {
             ptr::null()
         } else {
@@ -166,18 +167,15 @@ fn submit_clear(this: &Queue, image: &Image, color: &Color, events: &[SyncEvent]
 
         let mut event = ptr::null_mut();
 
-        if ffi::clEnqueueFillImage(this.data as cl_command_queue,
-                                   image.data[0] as cl_mem,
+        if ffi::clEnqueueFillImage(this.data() as cl_command_queue,
+                                   image.data()[0] as cl_mem,
                                    colors.as_ptr() as *const c_void,
                                    origin.as_ptr(),
                                    size.as_mut_ptr(),
                                    event_wait_list.len() as u32,
                                    event_wait_list_ptr,
                                    &mut event) == CL_SUCCESS {
-            Ok(ProfileEvent {
-                data: event as usize,
-                functions: &PROFILE_EVENT_FUNCTIONS,
-            })
+            Ok(ProfileEvent::from_raw_data(event as usize, &PROFILE_EVENT_FUNCTIONS))
         } else {
             Err(Error::Failed)
         }
@@ -191,7 +189,9 @@ fn submit_read_buffer(this: &Queue,
                       events: &[SyncEvent])
                       -> Result<ProfileEvent, Error> {
     unsafe {
-        let event_wait_list: Vec<_> = events.iter().map(|event| event.data as cl_event).collect();
+        let event_wait_list: Vec<_> = events.iter()
+                                            .map(|event| event.data() as cl_event)
+                                            .collect();
         let event_wait_list_ptr = if event_wait_list.is_empty() {
             ptr::null()
         } else {
@@ -200,8 +200,8 @@ fn submit_read_buffer(this: &Queue,
 
         let mut event = ptr::null_mut();
 
-        if ffi::clEnqueueReadBuffer(this.data as cl_command_queue,
-                                    buffer.data as cl_mem,
+        if ffi::clEnqueueReadBuffer(this.data() as cl_command_queue,
+                                    buffer.data() as cl_mem,
                                     CL_TRUE,
                                     start,
                                     dest.len(),
@@ -209,10 +209,7 @@ fn submit_read_buffer(this: &Queue,
                                     event_wait_list.len() as u32,
                                     event_wait_list_ptr,
                                     &mut event) == CL_SUCCESS {
-            Ok(ProfileEvent {
-                data: event as usize,
-                functions: &PROFILE_EVENT_FUNCTIONS,
-            })
+            Ok(ProfileEvent::from_raw_data(event as usize, &PROFILE_EVENT_FUNCTIONS))
         } else {
             Err(Error::Failed)
         }
@@ -222,11 +219,8 @@ fn submit_read_buffer(this: &Queue,
 fn submit_sync_event(this: &Queue) -> Result<SyncEvent, Error> {
     unsafe {
         let mut event = ptr::null_mut();
-        if ffi::clEnqueueMarker(this.data as cl_command_queue, &mut event) == CL_SUCCESS {
-            Ok(SyncEvent {
-                data: event as usize,
-                functions: &SYNC_EVENT_FUNCTIONS,
-            })
+        if ffi::clEnqueueMarker(this.data() as cl_command_queue, &mut event) == CL_SUCCESS {
+            Ok(SyncEvent::from_raw_data(event as usize, &SYNC_EVENT_FUNCTIONS))
         } else {
             Err(Error::Failed)
         }

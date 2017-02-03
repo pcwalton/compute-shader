@@ -8,13 +8,17 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! Objects that can be used to query how long GPU operations took.
+
 use error::Error;
 
+/// An object that can be used to query how long GPU operations took.
 pub struct ProfileEvent {
-    pub data: usize,
-    pub functions: &'static ProfileEventFunctions,
+    data: usize,
+    functions: &'static ProfileEventFunctions,
 }
 
+#[doc(hidden)]
 pub struct ProfileEventFunctions {
     pub destroy: unsafe extern "Rust" fn(this: &ProfileEvent),
     pub time_elapsed: extern "Rust" fn(this: &ProfileEvent) -> Result<u64, Error>,
@@ -29,6 +33,25 @@ impl Drop for ProfileEvent {
 }
 
 impl ProfileEvent {
+    #[doc(hidden)]
+    #[inline]
+    pub unsafe fn from_raw_data(data: usize, functions: &'static ProfileEventFunctions)
+                                -> ProfileEvent {
+        ProfileEvent {
+            data: data,
+            functions: functions,
+        }
+    }
+
+    #[doc(hidden)]
+    #[inline]
+    pub fn data(&self) -> usize {
+        self.data
+    }
+
+    /// Returns the time that this operation took in nanoseconds.
+    ///
+    /// If the operation has not yet completed, this function blocks until it completes.
     #[inline]
     pub fn time_elapsed(&self) -> Result<u64, Error> {
         (self.functions.time_elapsed)(self)

@@ -8,11 +8,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! Programs to be run on the GPU.
+
+/// A program to be run on the GPU.
 pub struct Program {
-    pub data: usize,
-    pub functions: &'static ProgramFunctions,
+    data: usize,
+    functions: &'static ProgramFunctions,
 }
 
+#[doc(hidden)]
 pub struct ProgramFunctions {
     pub destroy: unsafe extern "Rust" fn(this: &Program),
 }
@@ -22,6 +26,23 @@ impl Drop for Program {
         unsafe {
             (self.functions.destroy)(self)
         }
+    }
+}
+
+impl Program {
+    #[doc(hidden)]
+    #[inline]
+    pub unsafe fn from_raw_data(data: usize, functions: &'static ProgramFunctions) -> Program {
+        Program {
+            data: data,
+            functions: functions,
+        }
+    }
+
+    #[doc(hidden)]
+    #[inline]
+    pub fn data(&self) -> usize {
+        self.data
     }
 }
 

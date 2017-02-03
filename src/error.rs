@@ -8,10 +8,20 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! Errors.
+
+/// The universal error type.
 #[derive(Debug)]
 pub enum Error {
+    /// A miscellaneous error occurred.
     Failed,
+    /// Compilation of the shader failed.
+    ///
+    /// The string represents the error message that the driver reported.
     CompileFailed(String),
+    /// Shader linking failed.
+    ///
+    /// The string represents the error message that the driver reported.
     LinkFailed(String),
 }
 

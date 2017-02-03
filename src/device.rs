@@ -8,6 +8,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! A GPU that supports compute.
+
 use buffer::{Buffer, BufferData, Protection};
 use error::Error;
 use euclid::Size2D;
@@ -15,11 +17,13 @@ use image::{Format, Image};
 use program::Program;
 use queue::Queue;
 
+/// A GPU that supports compute.
 pub struct Device {
-    pub data: usize,
-    pub functions: &'static DeviceFunctions,
+    data: usize,
+    functions: &'static DeviceFunctions,
 }
 
+#[doc(hidden)]
 pub struct DeviceFunctions {
     pub destroy: unsafe extern "Rust" fn(this: &Device),
     pub create_queue: extern "Rust" fn(this: &Device) -> Result<Queue, Error>,
@@ -42,22 +46,47 @@ impl Drop for Device {
 }
 
 impl Device {
+    #[doc(hidden)]
+    #[inline]
+    pub unsafe fn from_raw_data(data: usize, functions: &'static DeviceFunctions) -> Device {
+        Device {
+            data: data,
+            functions: functions,
+        }
+    }
+
+    #[doc(hidden)]
+    #[inline]
+    pub fn data(&self) -> usize {
+        self.data
+    }
+
+    /// Creates a new command queue on which jobs can be submitted.
     #[inline]
     pub fn create_queue(&self) -> Result<Queue, Error> {
         (self.functions.create_queue)(self)
     }
 
+    /// Creates, compiles, and links a new compute program to execute on the GPU with the given
+    /// source.
+    ///
+    /// The supplied source must conform to the result of `Instance::shading_language()`.
     #[inline]
     pub fn create_program(&self, source: &str) -> Result<Program, Error> {
         (self.functions.create_program)(self, source)
     }
 
+    /// Creates a new block of GPU memory with the given GPU-side protection, initialized with the
+    /// supplied data.
     #[inline]
     pub fn create_buffer(&self, protection: Protection, data: BufferData)
                          -> Result<Buffer, Error> {
         (self.functions.create_buffer)(self, protection, data)
     }
 
+    /// Creates a new image of the given format, GPU-side protection, and size.
+    ///
+    /// The initial contents of the image are undefined.
     #[inline]
     pub fn create_image(&self, format: Format, protection: Protection, size: &Size2D<u32>)
                         -> Result<Image, Error> {

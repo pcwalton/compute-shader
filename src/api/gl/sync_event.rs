@@ -21,13 +21,13 @@ pub static SYNC_EVENT_FUNCTIONS: SyncEventFunctions = SyncEventFunctions {
 };
 
 unsafe fn destroy(event: &SyncEvent) {
-    let data = event.data as GLsync;
+    let data = event.data() as GLsync;
     gl::DeleteSync(data);
 }
 
 fn wait(event: &SyncEvent) -> Result<(), Error> {
     unsafe {
-        gl::ClientWaitSync(event.data as GLsync, gl::SYNC_FLUSH_COMMANDS_BIT, TIMEOUT);
+        gl::ClientWaitSync(event.data() as GLsync, gl::SYNC_FLUSH_COMMANDS_BIT, TIMEOUT);
         Ok(())
     }
 }

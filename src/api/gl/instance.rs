@@ -16,14 +16,13 @@ use instance::{Instance, InstanceFunctions, ShadingLanguage};
 pub static INSTANCE_FUNCTIONS: InstanceFunctions = InstanceFunctions {
     destroy: destroy,
     shading_language: shading_language,
-    create_device: create_device,
+    open_device: open_device,
 };
 
 pub fn create() -> Result<Instance, Error> {
-    Ok(Instance {
-        data: 0,
-        functions: &INSTANCE_FUNCTIONS,
-    })
+    unsafe {
+        Ok(Instance::from_raw_data(0, &INSTANCE_FUNCTIONS))
+    }
 }
 
 unsafe fn destroy(_: &Instance) {}
@@ -32,10 +31,9 @@ fn shading_language(_: &Instance) -> ShadingLanguage {
     ShadingLanguage::Glsl
 }
 
-fn create_device(_: &Instance) -> Result<Device, Error> {
-    Ok(Device {
-        data: 0,
-        functions: &DEVICE_FUNCTIONS,
-    })
+fn open_device(_: &Instance) -> Result<Device, Error> {
+    unsafe {
+        Ok(Device::from_raw_data(0, &DEVICE_FUNCTIONS))
+    }
 }
 

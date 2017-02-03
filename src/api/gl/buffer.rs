@@ -17,7 +17,7 @@ pub static BUFFER_FUNCTIONS: BufferFunctions = BufferFunctions {
 };
 
 unsafe fn destroy(this: &Buffer) {
-    let mut buffer = this.data as GLuint;
+    let mut buffer = this.data() as GLuint;
     gl::DeleteBuffers(1, &mut buffer)
 }
 

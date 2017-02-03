@@ -22,17 +22,17 @@ pub static PROFILE_EVENT_FUNCTIONS: ProfileEventFunctions = ProfileEventFunction
 };
 
 unsafe fn destroy(this: &ProfileEvent) {
-    ffi::clReleaseEvent(this.data as cl_event);
+    ffi::clReleaseEvent(this.data() as cl_event);
 }
 
 fn time_elapsed(this: &ProfileEvent) -> Result<u64, Error> {
     unsafe {
-        if ffi::clWaitForEvents(1, (&this.data) as *const usize as *const cl_event) != CL_SUCCESS {
+        if ffi::clWaitForEvents(1, &this.data() as *const usize as *const cl_event) != CL_SUCCESS {
             return Err(Error::Failed)
         }
 
         let mut start_time = 0;
-        if ffi::clGetEventProfilingInfo(this.data as cl_event,
+        if ffi::clGetEventProfilingInfo(this.data() as cl_event,
                                         CL_PROFILING_COMMAND_START,
                                         mem::size_of::<cl_ulong>(),
                                         &mut start_time as *mut u64 as *mut c_void,
@@ -41,7 +41,7 @@ fn time_elapsed(this: &ProfileEvent) -> Result<u64, Error> {
         }
 
         let mut end_time = 0;
-        if ffi::clGetEventProfilingInfo(this.data as cl_event,
+        if ffi::clGetEventProfilingInfo(this.data() as cl_event,
                                         CL_PROFILING_COMMAND_END,
                                         mem::size_of::<cl_ulong>(),
                                         &mut end_time as *mut u64 as *mut c_void,

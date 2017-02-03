@@ -35,10 +35,9 @@ pub static DEVICE_FUNCTIONS: DeviceFunctions = DeviceFunctions {
 unsafe fn destroy(_: &Device) {}
 
 fn create_queue(_: &Device) -> Result<Queue, Error> {
-    Ok(Queue {
-        data: 0,
-        functions: &QUEUE_FUNCTIONS,
-    })
+    unsafe {
+        Ok(Queue::from_raw_data(0, &QUEUE_FUNCTIONS))
+    }
 }
 
 fn create_program(_: &Device, source: &str) -> Result<Program, Error> {
@@ -81,10 +80,7 @@ fn create_program(_: &Device, source: &str) -> Result<Program, Error> {
             return Err(Error::LinkFailed(info_log))
         }
 
-        Ok(Program {
-            data: program as usize,
-            functions: &PROGRAM_FUNCTIONS,
-        })
+        Ok(Program::from_raw_data(program as usize, &PROGRAM_FUNCTIONS))
     }
 }
 
@@ -106,10 +102,7 @@ fn create_buffer(_: &Device, _: Protection, mut data: BufferData) -> Result<Buff
             }
         }
 
-        Ok(Buffer {
-            data: buffer as usize,
-            functions: &BUFFER_FUNCTIONS,
-        })
+        Ok(Buffer::from_raw_data(buffer as usize, &BUFFER_FUNCTIONS))
     }
 }
 
@@ -123,10 +116,7 @@ fn create_image(_: &Device, format: Format, protection: Protection, size: &Size2
         let gl_format = format.gl_internal_format();
         gl::TexStorage2D(gl::TEXTURE_2D, 0, gl_format, size.width as i32, size.height as i32);
 
-        Ok(Image {
-            data: [texture as usize, protection as usize],
-            functions: &IMAGE_FUNCTIONS,
-        })
+        Ok(Image::from_raw_data([texture as usize, protection as usize], &IMAGE_FUNCTIONS))
     }
 }
 

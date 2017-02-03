@@ -47,13 +47,13 @@ pub static DEVICE_FUNCTIONS: DeviceFunctions = DeviceFunctions {
 };
 
 unsafe fn destroy(this: &Device) {
-    ffi::clReleaseContext(this.data as cl_context);
+    ffi::clReleaseContext(this.data() as cl_context);
 }
 
 fn create_queue(this: &Device) -> Result<Queue, Error> {
     unsafe {
         let mut device_id: cl_device_id = ptr::null_mut();
-        if ffi::clGetContextInfo(this.data as cl_context,
+        if ffi::clGetContextInfo(this.data() as cl_context,
                                  CL_CONTEXT_DEVICES,
                                  mem::size_of::<cl_device_id>(),
                                  &mut device_id as *mut cl_device_id as *mut c_void,
@@ -61,15 +61,12 @@ fn create_queue(this: &Device) -> Result<Queue, Error> {
             return Err(Error::Failed)
         }
 
-        let queue = ffi::clCreateCommandQueue(this.data as cl_context,
+        let queue = ffi::clCreateCommandQueue(this.data() as cl_context,
                                               device_id,
                                               CL_QUEUE_PROFILING_ENABLE,
                                               ptr::null_mut());
         if queue != ptr::null_mut() {
-            Ok(Queue {
-                data: queue as usize,
-                functions: &QUEUE_FUNCTIONS,
-            })
+            Ok(Queue::from_raw_data(queue as usize, &QUEUE_FUNCTIONS))
         } else {
             Err(Error::Failed)
         }
@@ -80,7 +77,7 @@ fn create_program(this: &Device, source: &str) -> Result<Program, Error> {
     unsafe {
         let mut strings = source.as_ptr() as *const i8;
         let lengths = source.len();
-        let program = ffi::clCreateProgramWithSource(this.data as cl_context,
+        let program = ffi::clCreateProgramWithSource(this.data() as cl_context,
                                                      1,
                                                      &mut strings,
                                                      &lengths,
@@ -90,7 +87,7 @@ fn create_program(this: &Device, source: &str) -> Result<Program, Error> {
         }
 
         let mut device_id: cl_device_id = ptr::null_mut();
-        if ffi::clGetContextInfo(this.data as cl_context,
+        if ffi::clGetContextInfo(this.data() as cl_context,
                                  CL_CONTEXT_DEVICES,
                                  mem::size_of::<cl_device_id>(),
                                  &mut device_id as *mut cl_device_id as *mut c_void,
@@ -124,10 +121,7 @@ fn create_program(this: &Device, source: &str) -> Result<Program, Error> {
             return Err(Error::Failed)
         }
 
-        Ok(Program {
-            data: kernel as usize,
-            functions: &PROGRAM_FUNCTIONS,
-        })
+        Ok(Program::from_raw_data(kernel as usize, &PROGRAM_FUNCTIONS))
     }
 }
 
@@ -149,16 +143,13 @@ fn create_buffer(this: &Device, protection: Protection, mut data: BufferData)
             }
         }
 
-        let buffer = ffi::clCreateBuffer(this.data as cl_context,
+        let buffer = ffi::clCreateBuffer(this.data() as cl_context,
                                          mem_flags,
                                          size,
                                          host_ptr as *mut c_void,
                                          ptr::null_mut());
         if !buffer.is_null() {
-            Ok(Buffer {
-                data: buffer as usize,
-                functions: &BUFFER_FUNCTIONS,
-            })
+            Ok(Buffer::from_raw_data(buffer as usize, &BUFFER_FUNCTIONS))
         } else {
             Err(Error::Failed)
         }
@@ -203,7 +194,7 @@ fn create_image(this: &Device, format: Format, protection: Protection, size: &Si
 
         let mut error = CL_SUCCESS;
 
-        let image = ffi::clCreateImageFromIOSurface2DAPPLE(this.data as cl_context,
+        let image = ffi::clCreateImageFromIOSurface2DAPPLE(this.data() as cl_context,
                                                            protection,
                                                            &image_format,
                                                            size.width as usize,
@@ -218,10 +209,7 @@ fn create_image(this: &Device, format: Format, protection: Protection, size: &Si
         let surface_ref = surface.as_concrete_TypeRef();
         mem::forget(surface);
 
-        Ok(Image {
-            data: [image as usize, surface_ref as usize],
-            functions: &IMAGE_FUNCTIONS,
-        })
+        Ok(Image::from_raw_data([image as usize, surface_ref as usize], &IMAGE_FUNCTIONS))
     }
 }
 

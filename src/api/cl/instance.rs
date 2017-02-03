@@ -18,14 +18,13 @@ use std::ptr;
 pub static INSTANCE_FUNCTIONS: InstanceFunctions = InstanceFunctions {
     destroy: destroy,
     shading_language: shading_language,
-    create_device: create_device,
+    open_device: open_device,
 };
 
 pub fn create() -> Result<Instance, Error> {
-    Ok(Instance {
-        data: 0,
-        functions: &INSTANCE_FUNCTIONS,
-    })
+    unsafe {
+        Ok(Instance::from_raw_data(0, &INSTANCE_FUNCTIONS))
+    }
 }
 
 unsafe fn destroy(_: &Instance) {}
@@ -34,7 +33,7 @@ fn shading_language(_: &Instance) -> ShadingLanguage {
     ShadingLanguage::Cl
 }
 
-fn create_device(_: &Instance) -> Result<Device, Error> {
+fn open_device(_: &Instance) -> Result<Device, Error> {
     unsafe {
         let (mut device_id, mut num_devices) = (ptr::null_mut(), 0);
         if ffi::clGetDeviceIDs(ptr::null_mut(),
@@ -55,10 +54,7 @@ fn create_device(_: &Instance) -> Result<Device, Error> {
             return Err(Error::Failed)
         }
 
-        Ok(Device {
-            data: context as usize,
-            functions: &DEVICE_FUNCTIONS, 
-        })
+        Ok(Device::from_raw_data(context as usize, &DEVICE_FUNCTIONS))
     }
 }
 

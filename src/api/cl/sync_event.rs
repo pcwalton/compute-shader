@@ -18,12 +18,12 @@ pub static SYNC_EVENT_FUNCTIONS: SyncEventFunctions = SyncEventFunctions {
 };
 
 unsafe fn destroy(this: &SyncEvent) {
-    ffi::clReleaseEvent(this.data as cl_event);
+    ffi::clReleaseEvent(this.data() as cl_event);
 }
 
 fn wait(this: &SyncEvent) -> Result<(), Error> {
     unsafe {
-        let event = this.data as cl_event;
+        let event = this.data() as cl_event;
         if ffi::clWaitForEvents(1, &event) == CL_SUCCESS {
             Ok(())
         } else {

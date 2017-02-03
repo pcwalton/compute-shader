@@ -45,7 +45,7 @@ pub fn main() {
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const c_void);
 
     let instance = Instance::new().unwrap();
-    let device = instance.create_device().unwrap();
+    let device = instance.open_device().unwrap();
 
     let source = match instance.shading_language() {
         ShadingLanguage::Cl => CL_SHADER,
