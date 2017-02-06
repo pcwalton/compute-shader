@@ -111,10 +111,14 @@ fn create_image(_: &Device, format: Format, protection: Protection, size: &Size2
     unsafe {
         let mut texture = 0;
         gl::GenTextures(1, &mut texture);
-        gl::BindTexture(gl::TEXTURE_2D, texture);
+        gl::BindTexture(gl::TEXTURE_RECTANGLE, texture);
 
         let gl_format = format.gl_internal_format();
-        gl::TexStorage2D(gl::TEXTURE_2D, 0, gl_format, size.width as i32, size.height as i32);
+        gl::TexStorage2D(gl::TEXTURE_RECTANGLE,
+                         1,
+                         gl_format,
+                         size.width as i32,
+                         size.height as i32);
 
         Ok(Image::from_raw_data([texture as usize, protection as usize], &IMAGE_FUNCTIONS))
     }

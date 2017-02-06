@@ -117,10 +117,10 @@ static GL_SHADER: &'static str = r#"
 
     layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
-    layout(std430, binding = 0) buffer ssboOutput {
+    layout(std430, binding = 0) buffer ssbOutput {
         float gOutput[];
     };
-    layout(std430, binding = 1) buffer ssboInput {
+    layout(std430, binding = 1) buffer ssbInput {
         float gInput[];
     };
     layout(location = 2) uniform uint uLength;

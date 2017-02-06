@@ -14,14 +14,16 @@ use compute_shader::instance::{Instance, ShadingLanguage};
 use compute_shader::queue::Uniform;
 use euclid::Size2D;
 use gl::types::GLint;
-use glfw::{Action, Context, Key, OpenGlProfileHint, WindowEvent, WindowHint, WindowMode};
+use glfw::{Action, Context, Key, OpenGlProfileHint, WindowEvent};
+use glfw::{WindowHint, WindowMode};
 use rand::Rng;
+use std::mem;
 use std::os::raw::c_void;
 
 const WIDTH: u32 = 800;
 const HEIGHT: u32 = 600;
 
-const ITERATIONS: u32 = 128;
+const ITERATIONS: u32 = 8;
 
 #[derive(Clone, Copy, Debug)]
 struct Vertex {
@@ -48,15 +50,16 @@ pub fn main() {
 
     let source = match instance.shading_language() {
         ShadingLanguage::Cl => CL_SHADER,
-        ShadingLanguage::Glsl => panic!(),
+        ShadingLanguage::Glsl => GL_SHADER,
     };
     let program = device.create_program(source).unwrap();
 
     let draw_context = lord_drawquaad::Context::new();
 
-    let buffer_data = BufferData::Uninitialized(WIDTH as usize * HEIGHT as usize);
+    let buffer_data = BufferData::Uninitialized(WIDTH as usize * HEIGHT as usize *
+                                                mem::size_of::<f32>());
     let buffer = device.create_buffer(Protection::ReadWrite, buffer_data).unwrap();
-    let dest = device.create_image(Format::R8, Protection::WriteOnly, &Size2D::new(WIDTH, HEIGHT))
+    let dest = device.create_image(Format::R8, Protection::ReadWrite, &Size2D::new(WIDTH, HEIGHT))
                      .unwrap();
     let seed: u32 = rand::thread_rng().next_u32();
 
@@ -84,6 +87,8 @@ pub fn main() {
     queue.submit_sync_event().unwrap().wait().unwrap();
 
     unsafe {
+        gl::MemoryBarrier(gl::TEXTURE_FETCH_BARRIER_BIT | gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
         gl::ClearColor(1.0, 1.0, 1.0, 1.0);
         gl::Clear(gl::COLOR_BUFFER_BIT);
     }
@@ -169,6 +174,93 @@ static CL_SHADER: &'static str = r#"
 
         uint4 color = (uint4)((uint)value(on), (uint)value(on), (uint)value(on), (uint)value(on));
         write_imageui(gImage, home, color);
+    }
+"#;
+
+static GL_SHADER: &'static str = r#"
+    #version 330
+    #extension GL_ARB_compute_shader : require
+    #extension GL_ARB_explicit_uniform_location : require
+    #extension GL_ARB_shader_storage_buffer_object : require
+    #extension GL_ARB_shader_image_load_store : require
+    #extension GL_ARB_shader_image_size : require
+    #extension GL_ARB_shading_language_420pack : require
+
+    layout(r8, binding = 0) uniform restrict writeonly image2D uImage;
+
+    layout(std430, binding = 1) buffer ssbBuffer {
+        float gBuffer[480000];
+    };
+
+    layout(location = 2) uniform uint uSeed;
+    layout(location = 3) uniform uint uIterations;
+
+    layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+    // Xorshift32
+    uint rand(uint state) {
+        state ^= state << 13u;
+        state ^= state >> 17u;
+        state ^= state << 5u;
+        return state;
+    }
+
+    uint offset(ivec2 pos, ivec2 dimensions) {
+        return uint(pos.y) * uint(dimensions.x) + uint(pos.x);
+    }
+
+    float value(bool on) {
+        return on ? 1.0 : 0.0;
+    }
+
+    uint countNeighbors(ivec2 p, ivec2 dimensions) {
+        uint neighbors = 0u;
+        for (int y = p.y - 1; y <= p.y + 1; y++) {
+            if (y >= 0 && y < dimensions.y) {
+                for (int x = p.x - 1; x <= p.x + 1; x++) {
+                    if (x >= 0 && x < dimensions.x && (y != p.y || x != p.x)) {
+                        if (gBuffer[offset(ivec2(x, y), dimensions)] != 0.0)
+                            neighbors++;
+                    }
+                }
+            }
+        }
+        return neighbors;
+    }
+
+    void main() {
+        // Based on xxHash
+        uint state = uSeed;
+        state *= uint(gl_GlobalInvocationID.x);
+        state ^= state >> 13u;
+        state *= uint(gl_GlobalInvocationID.y);
+        state ^= state >> 16u;
+
+        // Initial state
+        ivec2 dimensions = imageSize(uImage);
+        ivec2 home = ivec2(gl_GlobalInvocationID.xy);
+        bool inBounds = home.x < dimensions.x && home.y < dimensions.y;
+        bool on = rand(state) < 0x73333333u;
+        if (inBounds)
+            gBuffer[offset(home, dimensions)] = value(on);
+
+        for (uint i = 0u; i < uIterations; i++) {
+            barrier();
+            uint neighbors = inBounds ? countNeighbors(home, dimensions) : 0u;
+
+            if (on && neighbors < 3u)
+                on = false;
+            else if (neighbors > 4u)
+                on = true;
+
+            barrier();
+            if (inBounds)
+                gBuffer[offset(home, dimensions)] = value(on);
+        }
+
+        vec4 color = vec4(value(on));
+        if (inBounds)
+            imageStore(uImage, home, color);
     }
 "#;
 

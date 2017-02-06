@@ -38,7 +38,7 @@ fn bind_to(this: &Image, external_texture: &ExternalImage) -> Result<(), Error> 
                                            &mut format);
 
                 gl::TextureView(texture,
-                                gl::TEXTURE_2D,
+                                gl::TEXTURE_RECTANGLE,
                                 this.data()[0] as GLuint,
                                 format as GLuint,
                                 0,

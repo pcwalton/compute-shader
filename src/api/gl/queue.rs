@@ -56,10 +56,11 @@ fn submit_compute(_: &Queue,
     unsafe {
         gl::UseProgram(program.data() as GLuint);
 
-        let (mut next_ssbo_binding, mut next_image_unit) = (0, 0);
         for &(uniform_index, ref uniform) in uniforms {
             match *uniform {
                 Uniform::Buffer(buffer) => {
+                    gl::MemoryBarrier(gl::SHADER_STORAGE_BARRIER_BIT);
+
                     let mut buffer_size = 0;
                     gl::BindBuffer(gl::COPY_READ_BUFFER, buffer.data() as u32);
                     gl::GetBufferParameteriv(gl::COPY_READ_BUFFER,
@@ -67,12 +68,15 @@ fn submit_compute(_: &Queue,
                                              &mut buffer_size);
 
                     gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER,
-                                       next_ssbo_binding,
+                                       uniform_index,
                                        buffer.data() as GLuint);
-
-                    next_ssbo_binding += 1
                 }
                 Uniform::Image(image) => {
+                    gl::MemoryBarrier(gl::TEXTURE_FETCH_BARRIER_BIT |
+                                      gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+                    gl::Uniform1i(uniform_index as GLint, uniform_index as GLint);
+
                     let access = match image.data()[1] {
                         p if p == Protection::ReadOnly as usize => gl::READ_ONLY,
                         p if p == Protection::WriteOnly as usize => gl::WRITE_ONLY,
@@ -86,17 +90,15 @@ fn submit_compute(_: &Queue,
                                                0,
                                                gl::TEXTURE_INTERNAL_FORMAT,
                                                &mut internal_format);
+                    gl::BindTexture(gl::TEXTURE_RECTANGLE, 0);
 
-                    gl::BindImageTexture(next_image_unit,
+                    gl::BindImageTexture(uniform_index,
                                          image.data()[0] as GLuint,
                                          0,
                                          gl::FALSE,
                                          0,
                                          access,
                                          internal_format as GLuint);
-                                         
-                    gl::Uniform1i(uniform_index as GLint, next_image_unit as GLint);
-                    next_image_unit += 1
                 }
                 Uniform::U32(value) => gl::Uniform1ui(uniform_index as GLint, value),
                 Uniform::UVec4(values) => {

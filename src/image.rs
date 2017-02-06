@@ -40,8 +40,10 @@ pub enum ExternalImage {
 /// TODO(pcwalton): Support more.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Format {
-    /// 8-bit unsigned single-channel.
+    /// 8-bit unsigned normalized single-channel.
     R8,
+    /// 8-bit unsigned normalized 4-channel.
+    RGBA8,
     /// 32-bit single-channel floating-point.
     R32F,
 }
@@ -106,6 +108,7 @@ impl Format {
     pub fn gl_format(self) -> GLuint {
         match self {
             Format::R8 | Format::R32F => gl::RED,
+            Format::RGBA8 => gl::RGBA,
         }
     }
 
@@ -114,7 +117,7 @@ impl Format {
     #[inline]
     pub fn gl_type(self) -> GLuint {
         match self {
-            Format::R8 => gl::UNSIGNED_BYTE,
+            Format::R8 | Format::RGBA8 => gl::UNSIGNED_BYTE,
             Format::R32F => gl::FLOAT,
         }
     }
@@ -124,6 +127,7 @@ impl Format {
     pub fn gl_internal_format(self) -> GLuint {
         match self {
             Format::R8 => gl::R8,
+            Format::RGBA8 => gl::RGBA8,
             Format::R32F => gl::R32F,
         }
     }
