@@ -12,6 +12,7 @@
 
 extern crate euclid;
 extern crate gl;
+extern crate libc;
 
 #[cfg(target_os = "macos")]
 extern crate core_foundation;

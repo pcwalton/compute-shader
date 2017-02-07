@@ -4,6 +4,7 @@
 
 #[cfg(target_os = "macos")]
 use io_surface::IOSurfaceRef;
+use std::os::raw::c_void;
 
 pub type int32_t = i32;
 pub type uint32_t = u32;
@@ -36,6 +37,7 @@ pub type cl_command_queue_properties = cl_bitfield;
 pub type cl_context_properties = intptr_t;
 pub type cl_context_info = cl_uint;
 pub type cl_program_build_info = cl_uint;
+pub type cl_device_info = cl_uint;
 pub type cl_kernel_info = cl_uint;
 pub type cl_channel_order = cl_uint;
 pub type cl_channel_type = cl_uint;
@@ -60,6 +62,9 @@ extern "C" {
     pub fn clGetDeviceIDs(arg1: cl_platform_id, arg2: cl_device_type,
                           arg3: cl_uint, arg4: *mut cl_device_id,
                           arg5: *mut cl_uint) -> cl_int;
+    pub fn clGetDeviceInfo(arg1: cl_device_id, arg2: cl_device_info,
+                           arg3: size_t, arg4: *mut c_void,
+                           arg5: *mut size_t) -> cl_int;
     pub fn clCreateContext(arg1: *const cl_context_properties, arg2: cl_uint,
                            arg3: *const cl_device_id,
                            arg4:
@@ -164,6 +169,8 @@ pub const CL_TRUE: cl_bool = 1;
 pub const CL_DEVICE_TYPE_GPU: cl_device_type = 1 << 2;
 
 pub const CL_QUEUE_PROFILING_ENABLE: cl_command_queue_properties = 1 << 1;
+
+pub const CL_DEVICE_NAME: cl_device_info = 0x102b;
 
 pub const CL_CONTEXT_DEVICES: cl_context_info = 0x1081;
 
