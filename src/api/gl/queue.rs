@@ -75,8 +75,6 @@ fn submit_compute(_: &Queue,
                     gl::MemoryBarrier(gl::TEXTURE_FETCH_BARRIER_BIT |
                                       gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-                    gl::Uniform1i(uniform_index as GLint, uniform_index as GLint);
-
                     let access = match image.data()[1] {
                         p if p == Protection::ReadOnly as usize => gl::READ_ONLY,
                         p if p == Protection::WriteOnly as usize => gl::WRITE_ONLY,
