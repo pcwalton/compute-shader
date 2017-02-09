@@ -11,8 +11,8 @@
 use api::cl::buffer::BUFFER_FUNCTIONS;
 use api::cl::ffi::{self, CL_CONTEXT_DEVICES, CL_FLOAT, CL_MEM_COPY_HOST_PTR, CL_MEM_READ_ONLY};
 use api::cl::ffi::{CL_MEM_READ_WRITE, CL_MEM_WRITE_ONLY, CL_PROGRAM_BUILD_LOG};
-use api::cl::ffi::{CL_QUEUE_PROFILING_ENABLE, CL_R, CL_SUCCESS, CL_UNSIGNED_INT8, cl_context};
-use api::cl::ffi::{cl_device_id, cl_image_format, cl_mem_flags};
+use api::cl::ffi::{CL_QUEUE_PROFILING_ENABLE, CL_R, CL_RGBA, CL_SUCCESS, CL_UNORM_INT8};
+use api::cl::ffi::{cl_context, cl_device_id, cl_image_format, cl_mem_flags};
 use api::cl::image::IMAGE_FUNCTIONS;
 use api::cl::program::PROGRAM_FUNCTIONS;
 use api::cl::queue::QUEUE_FUNCTIONS;
@@ -162,7 +162,7 @@ fn create_image(this: &Device, format: Format, protection: Protection, size: &Si
     unsafe {
         let bytes_per_element = match format {
             Format::R8 => 1,
-            Format::R32F => 4,
+            Format::RGBA8 | Format::R32F => 4,
         };
 
         let properties = CFDictionary::from_CFType_pairs(&[
@@ -181,7 +181,13 @@ fn create_image(this: &Device, format: Format, protection: Protection, size: &Si
             Format::R8 => {
                 cl_image_format {
                     image_channel_order: CL_R,
-                    image_channel_data_type: CL_UNSIGNED_INT8,
+                    image_channel_data_type: CL_UNORM_INT8,
+                }
+            }
+            Format::RGBA8 => {
+                cl_image_format {
+                    image_channel_order: CL_RGBA,
+                    image_channel_data_type: CL_UNORM_INT8,
                 }
             }
             Format::R32F => {

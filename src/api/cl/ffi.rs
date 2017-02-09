@@ -175,8 +175,9 @@ pub const CL_DEVICE_NAME: cl_device_info = 0x102b;
 pub const CL_CONTEXT_DEVICES: cl_context_info = 0x1081;
 
 pub const CL_R: cl_channel_order = 0x10b0;
+pub const CL_RGBA: cl_channel_order = 0x10b5;
 
-pub const CL_UNSIGNED_INT8: cl_channel_type = 0x10da;
+pub const CL_UNORM_INT8: cl_channel_type = 0x10d2;
 pub const CL_FLOAT: cl_channel_type = 0x10de;
 
 pub const CL_MEM_READ_WRITE: cl_mem_flags = 1 << 0;

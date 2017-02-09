@@ -9,7 +9,7 @@
 // except according to those terms.
 
 use api::cl::ffi::{self, CL_FLOAT, CL_IMAGE_FORMAT, CL_IMAGE_HEIGHT, CL_IMAGE_WIDTH, CL_R};
-use api::cl::ffi::{CL_SUCCESS, CL_UNSIGNED_INT8, cl_image_format, cl_mem};
+use api::cl::ffi::{CL_RGBA, CL_SUCCESS, CL_UNORM_INT8, cl_image_format, cl_mem};
 use error::Error;
 use gl;
 use image::{ExternalImage, Format, Image, ImageFunctions};
@@ -60,8 +60,9 @@ fn bind_to(this: &Image, external_image: &ExternalImage) -> Result<(), Error> {
 
                 let format = match (image_format.image_channel_order,
                                     image_format.image_channel_data_type) {
-                    (CL_R, CL_UNSIGNED_INT8) => Format::R8,
+                    (CL_R, CL_UNORM_INT8) => Format::R8,
                     (CL_R, CL_FLOAT) => Format::R32F,
+                    (CL_RGBA, CL_UNORM_INT8) => Format::RGBA8,
                     _ => unreachable!(),
                 };
 
