@@ -105,6 +105,18 @@ impl Format {
     /// Returns the value that should be passed as the `format` parameter to `glTexImage2D()` to
     /// create a texture matching this image format.
     #[inline]
+    #[cfg(target_os = "macos")]
+    pub fn gl_format(self) -> GLuint {
+        match self {
+            Format::R8 | Format::R32F => gl::RED,
+            Format::RGBA8 => gl::BGRA,
+        }
+    }
+
+    /// Returns the value that should be passed as the `format` parameter to `glTexImage2D()` to
+    /// create a texture matching this image format.
+    #[inline]
+    #[cfg(not(target_os = "macos"))]
     pub fn gl_format(self) -> GLuint {
         match self {
             Format::R8 | Format::R32F => gl::RED,
@@ -115,6 +127,19 @@ impl Format {
     /// Returns the value that should be passed as the `type` parameter to `glTexImage2D()` to
     /// create a texture matching this image format.
     #[inline]
+    #[cfg(target_os = "macos")]
+    pub fn gl_type(self) -> GLuint {
+        match self {
+            Format::R8 => gl::UNSIGNED_BYTE,
+            Format::RGBA8 => gl::UNSIGNED_INT_8_8_8_8_REV,
+            Format::R32F => gl::FLOAT,
+        }
+    }
+
+    /// Returns the value that should be passed as the `type` parameter to `glTexImage2D()` to
+    /// create a texture matching this image format.
+    #[inline]
+    #[cfg(not(target_os = "macos"))]
     pub fn gl_type(self) -> GLuint {
         match self {
             Format::R8 | Format::RGBA8 => gl::UNSIGNED_BYTE,
