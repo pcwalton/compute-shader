@@ -27,6 +27,7 @@ pub static IMAGE_FUNCTIONS: ImageFunctions = ImageFunctions {
     bind_to: bind_to,
     width: width,
     height: height,
+    format: format,
 };
 
 #[cfg(target_os = "macos")]
@@ -45,26 +46,7 @@ fn bind_to(this: &Image, external_image: &ExternalImage) -> Result<(), Error> {
         match *external_image {
             ExternalImage::GlTexture(texture) => {
                 let (width, height) = (try!(width(this)), try!(height(this)));
-
-                let mut image_format = cl_image_format {
-                    image_channel_order: 0,
-                    image_channel_data_type: 0,
-                };
-                if ffi::clGetImageInfo(this.data()[0] as cl_mem,
-                                       CL_IMAGE_FORMAT,
-                                       mem::size_of::<cl_image_format>(),
-                                       &mut image_format as *mut cl_image_format as *mut c_void,
-                                       ptr::null_mut()) != CL_SUCCESS {
-                    return Err(Error::Failed)
-                }
-
-                let format = match (image_format.image_channel_order,
-                                    image_format.image_channel_data_type) {
-                    (CL_R, CL_UNORM_INT8) => Format::R8,
-                    (CL_R, CL_FLOAT) => Format::R32F,
-                    (CL_RGBA, CL_UNORM_INT8) => Format::RGBA8,
-                    _ => unreachable!(),
-                };
+                let format = try!(format(this));
 
                 // FIXME(pcwalton): Fail more gracefully than panicking! (Really an `io-surface-rs`
                 // bug.)
@@ -109,6 +91,29 @@ fn height(this: &Image) -> Result<u32, Error> {
             Ok(height as u32)
         } else {
             Err(Error::Failed)
+        }
+    }
+}
+
+fn format(this: &Image) -> Result<Format, Error> {
+    unsafe {
+        let mut image_format = cl_image_format {
+            image_channel_order: 0,
+            image_channel_data_type: 0,
+        };
+        if ffi::clGetImageInfo(this.data()[0] as cl_mem,
+                               CL_IMAGE_FORMAT,
+                               mem::size_of::<cl_image_format>(),
+                               &mut image_format as *mut cl_image_format as *mut c_void,
+                               ptr::null_mut()) != CL_SUCCESS {
+            return Err(Error::Failed)
+        }
+
+        match (image_format.image_channel_order, image_format.image_channel_data_type) {
+            (CL_R, CL_UNORM_INT8) => Ok(Format::R8),
+            (CL_R, CL_FLOAT) => Ok(Format::R32F),
+            (CL_RGBA, CL_UNORM_INT8) => Ok(Format::RGBA8),
+            _ => unreachable!(),
         }
     }
 }

@@ -11,13 +11,14 @@
 use error::Error;
 use gl::types::GLuint;
 use gl;
-use image::{ExternalImage, Image, ImageFunctions};
+use image::{ExternalImage, Format, Image, ImageFunctions};
 
 pub static IMAGE_FUNCTIONS: ImageFunctions = ImageFunctions {
     destroy: destroy,
     bind_to: bind_to,
     width: width,
     height: height,
+    format: format,
 };
 
 unsafe fn destroy(this: &Image) {
@@ -68,6 +69,26 @@ fn height(this: &Image) -> Result<u32, Error> {
         gl::BindTexture(gl::TEXTURE_RECTANGLE, this.data()[0] as GLuint);
         gl::GetTexLevelParameteriv(gl::TEXTURE_RECTANGLE, 0, gl::TEXTURE_HEIGHT, &mut height);
         Ok(height as u32)
+    }
+}
+
+fn format(this: &Image) -> Result<Format, Error> {
+    unsafe {
+        let mut internal_format = 0;
+        gl::ActiveTexture(gl::TEXTURE0);
+        gl::BindTexture(gl::TEXTURE_RECTANGLE, this.data()[0] as GLuint);
+        gl::GetTexLevelParameteriv(gl::TEXTURE_RECTANGLE,
+                                   0,
+                                   gl::TEXTURE_INTERNAL_FORMAT,
+                                   &mut internal_format);
+
+        // This must match the definition of `Format::gl_internal_format()`.
+        match internal_format as GLuint {
+            gl::R8 => Ok(Format::R8),
+            gl::RGBA8 => Ok(Format::RGBA8),
+            gl::R32F => Ok(Format::R32F),
+            _ => Err(Error::Failed),
+        }
     }
 }
 

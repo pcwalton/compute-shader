@@ -27,6 +27,7 @@ pub struct ImageFunctions {
                                   -> Result<(), Error>,
     pub width: extern "Rust" fn(this: &Image) -> Result<u32, Error>,
     pub height: extern "Rust" fn(this: &Image) -> Result<u32, Error>,
+    pub format: extern "Rust" fn(this: &Image) -> Result<Format, Error>,
 }
 
 /// An external resource that can be made to refer to this image.
@@ -98,6 +99,12 @@ impl Image {
     #[inline]
     pub fn height(&self) -> Result<u32, Error> {
         (self.functions.height)(self)
+    }
+
+    /// Returns the format of this image.
+    #[inline]
+    pub fn format(&self) -> Result<Format, Error> {
+        (self.functions.format)(self)
     }
 }
 
